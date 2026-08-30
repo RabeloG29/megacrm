@@ -46,7 +46,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
               alt="Agentise"
               className="h-9 w-9 rounded-xl"
             />
-            <span className="font-semibold text-[var(--color-text-primary)]">Agentise</span>
+            <span className="font-semibold text-[var(--color-text-primary)]">TH CRM</span>
           </div>
           <button
             onClick={onClose}

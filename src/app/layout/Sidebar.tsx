@@ -44,9 +44,6 @@ export function Sidebar() {
         />
         {!collapsed && (
           <div className="leading-tight min-w-0 flex-1">
-            <div className="text-[0.65rem] uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">
-              Agentise
-            </div>
             <div className="text-sm font-bold text-[var(--color-text-primary)]">TH CRM</div>
           </div>
         )}
