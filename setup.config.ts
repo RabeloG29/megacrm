@@ -82,7 +82,7 @@ async function validateZernio(value: string) {
 }
 
 export const setupConfig: SetupConfig = {
-  toolName: 'Mega CRM',
+  toolName: 'TH CRM',
   toolSlug: 'whatsapp-hub',
   postBootstrapRedirect: '/dashboard',
   // O aluno conecta o WhatsApp dentro do Zernio (Embedded Signup) e informa

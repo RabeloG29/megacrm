@@ -88,19 +88,19 @@ export function CredentialField({
 
   if (!editing && initialHasValue) {
     return (
-      <div className="rounded-xl border border-[rgba(59,130,246,0.12)] bg-white/[0.02] p-5">
+      <div className="rounded-xl border border-[rgba(22,163,74,0.12)] bg-[rgba(22,163,74,0.05)] p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <div className="text-[13px] font-medium text-[#CBD5E1]">{field.label}</div>
-            <div className="mt-2 font-mono text-sm text-[#F8FAFC]">••••••••</div>
+            <div className="text-[13px] font-medium text-[#46574C]">{field.label}</div>
+            <div className="mt-2 font-mono text-sm text-[#0F2A1C]">••••••••</div>
             {field.helpText ? (
-              <p className="mt-2 text-[13px] leading-5 text-[#94A3B8]">{field.helpText}</p>
+              <p className="mt-2 text-[13px] leading-5 text-[#5B7566]">{field.helpText}</p>
             ) : null}
           </div>
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[rgba(59,130,246,0.2)] bg-white/[0.03] px-4 text-sm font-medium text-[#F8FAFC] transition hover:border-[#3B82F6] hover:shadow-[0_0_30px_rgba(59,130,246,0.25)]"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[rgba(22,163,74,0.2)] bg-[rgba(22,163,74,0.06)] px-4 text-sm font-medium text-[#0F2A1C] transition hover:border-[#16A34A] hover:shadow-[0_0_30px_rgba(22,163,74,0.25)]"
           >
             <Pencil className="h-4 w-4" />
             Alterar
@@ -111,9 +111,9 @@ export function CredentialField({
   }
 
   return (
-    <div className="rounded-xl border border-[rgba(59,130,246,0.12)] bg-white/[0.02] p-5">
+    <div className="rounded-xl border border-[rgba(22,163,74,0.12)] bg-[rgba(22,163,74,0.05)] p-5">
       <div className="mb-2 flex items-center justify-between gap-3">
-        <label htmlFor={field.key} className="text-[13px] font-medium text-[#CBD5E1]">
+        <label htmlFor={field.key} className="text-[13px] font-medium text-[#46574C]">
           {field.label}
         </label>
         {field.docsUrl ? (
@@ -121,7 +121,7 @@ export function CredentialField({
             href={field.docsUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 text-sm text-[#60A5FA] hover:text-[#85B7EB]"
+            className="inline-flex items-center gap-1 text-sm text-[#4ADE80] hover:text-[#86EFAC]"
           >
             onde gerar
             <ExternalLink className="h-3.5 w-3.5" />
@@ -137,7 +137,7 @@ export function CredentialField({
           placeholder={field.placeholder}
           autoComplete="off"
           spellCheck={false}
-          className="w-full rounded-lg border border-[rgba(59,130,246,0.2)] bg-white/[0.03] px-4 py-3 pr-20 text-sm text-[#F8FAFC] placeholder:text-[#94A3B8] focus:border-[#3B82F6] focus:outline-none focus:shadow-[0_0_20px_rgba(59,130,246,0.2)]"
+          className="w-full rounded-lg border border-[rgba(22,163,74,0.2)] bg-[rgba(22,163,74,0.06)] px-4 py-3 pr-20 text-sm text-[#0F2A1C] placeholder:text-[#5B7566] focus:border-[#16A34A] focus:outline-none focus:shadow-[0_0_20px_rgba(22,163,74,0.2)]"
         />
         <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-2">
           {field.inputType === 'password' ? (
@@ -145,7 +145,7 @@ export function CredentialField({
               type="button"
               aria-label={show ? 'Ocultar' : 'Mostrar'}
               onClick={() => setShow((next) => !next)}
-              className="text-[#94A3B8] hover:text-[#F8FAFC]"
+              className="text-[#5B7566] hover:text-[#0F2A1C]"
             >
               {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
@@ -158,7 +158,7 @@ export function CredentialField({
         <p
           className={cn(
             'text-[13px] leading-5',
-            validation.state === 'invalid' ? 'text-[#EF4444]' : 'text-[#94A3B8]',
+            validation.state === 'invalid' ? 'text-[#EF4444]' : 'text-[#5B7566]',
           )}
         >
           {validation.state === 'validating'
@@ -175,7 +175,7 @@ export function CredentialField({
               setValue('');
               onChange(field.key, null);
             }}
-            className="text-sm text-[#94A3B8] hover:text-[#F8FAFC]"
+            className="text-sm text-[#5B7566] hover:text-[#0F2A1C]"
           >
             Cancelar
           </button>

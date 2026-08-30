@@ -56,7 +56,7 @@ export default function LoginPage() {
   return (
     <AuthShell
       title="Entrar"
-      subtitle="Acesse seu painel MEGACRM."
+      subtitle="Acesse seu painel TH CRM."
       footer={
         <>
           Ainda não tem conta?{' '}

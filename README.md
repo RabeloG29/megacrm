@@ -1,4 +1,4 @@
-# Mega CRM (Agentise)
+# TH CRM (Agentise)
 
 Plataforma self-hosted de automacao WhatsApp para uma unica organizacao:
 templates assistidos por IA, campanhas em massa, inbox em tempo real,

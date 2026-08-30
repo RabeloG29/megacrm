@@ -32,7 +32,7 @@ function StatusTicks({ status }: { status: Message['meta_status'] }) {
       </span>
     );
   }
-  if (status === 'read') return <CheckCheck className="h-3 w-3 text-[#3B82F6]" />;
+  if (status === 'read') return <CheckCheck className="h-3 w-3 text-[#16A34A]" />;
   if (status === 'delivered') return <CheckCheck className="h-3 w-3 opacity-60" />;
   return <Check className="h-3 w-3 opacity-60" />;
 }
@@ -68,11 +68,11 @@ function formatDayLabel(iso: string): string {
 function DateSeparator({ iso }: { iso: string }) {
   return (
     <div className="flex items-center gap-3 py-2">
-      <div className="h-px flex-1 bg-[rgba(59,130,246,0.08)]" />
-      <span className="rounded-full border border-[rgba(59,130,246,0.15)] bg-white/[0.03] px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-secondary,#94A3B8)]">
+      <div className="h-px flex-1 bg-[rgba(22,163,74,0.08)]" />
+      <span className="rounded-full border border-[rgba(22,163,74,0.15)] bg-[rgba(22,163,74,0.06)] px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-secondary,#5B7566)]">
         {formatDayLabel(iso)}
       </span>
-      <div className="h-px flex-1 bg-[rgba(59,130,246,0.08)]" />
+      <div className="h-px flex-1 bg-[rgba(22,163,74,0.08)]" />
     </div>
   );
 }
@@ -248,7 +248,7 @@ export function MessageThread({ messages, loading, onRetry, onDismiss }: Message
               className={cn(
                 'max-w-[70%] rounded-2xl px-4 py-2.5 text-sm shadow-sm transition-opacity',
                 isInbound
-                  ? 'bg-white/[0.04] text-[var(--color-text-primary)] rounded-bl-md'
+                  ? 'bg-[rgba(22,163,74,0.07)] text-[var(--color-text-primary)] rounded-bl-md'
                   : 'bg-[var(--accent-primary)] text-white rounded-br-md',
                 m._state === 'pending' && 'opacity-70',
                 (m._state === 'failed' || m.meta_status === 'failed') &&
@@ -277,7 +277,7 @@ export function MessageThread({ messages, loading, onRetry, onDismiss }: Message
                 <MediaContent message={m} />
               )}
               {!isInbound && m.meta_status === 'failed' && m.error_reason && (
-                <div className="mt-1.5 rounded-md bg-black/25 px-2 py-1.5 text-[11px] leading-snug text-[#FCA5A5]">
+                <div className="mt-1.5 rounded-md bg-[rgba(239,68,68,0.08)] px-2 py-1.5 text-[11px] leading-snug text-[#B91C1C]">
                   <span className="font-semibold">Motivo: </span>
                   {m.error_reason}
                 </div>

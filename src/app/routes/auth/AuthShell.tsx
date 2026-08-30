@@ -18,11 +18,11 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
             <img
               src="/agentise-mark.png"
               alt="Agentise"
-              className="h-12 w-12 rounded-xl shadow-[0_0_30px_rgba(59,130,246,0.35)]"
+              className="h-12 w-12 rounded-xl shadow-[0_0_30px_rgba(22,163,74,0.35)]"
             />
             <div>
               <div className="text-label">Agentise</div>
-              <div className="text-xl font-bold text-display">MEGACRM</div>
+              <div className="text-xl font-bold text-display">TH CRM</div>
             </div>
           </div>
         </div>

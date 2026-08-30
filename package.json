@@ -1,7 +1,7 @@
 {
-  "name": "mega-crm",
+  "name": "th-crm",
   "version": "1.0.0",
-  "description": "Mega CRM: self-hosted WhatsApp CRM with AI-assisted templates, mass campaigns, real-time inbox with AI/human handoff, sales funnel and RAG knowledge base.",
+  "description": "TH CRM: self-hosted WhatsApp CRM with AI-assisted templates, mass campaigns, real-time inbox with AI/human handoff, sales funnel and RAG knowledge base.",
   "license": "MIT",
   "private": true,
   "type": "module",

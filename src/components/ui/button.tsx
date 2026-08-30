@@ -7,16 +7,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // Gradiente 135° #1E3A8A→#3B82F6 (botão primário do DS Agentise) com
-        // glow azul no hover (30→48px). Antes era cor chapada, fora do DS.
+        // Gradiente 135° #14532D→#16A34A (botão primário do DS TH CRM) com
+        // glow verde no hover (30→48px). Antes era cor chapada, fora do DS.
         default:
-          'bg-[linear-gradient(135deg,#1E3A8A,#3B82F6)] text-white shadow-[0_0_30px_rgba(59,130,246,0.25)] hover:shadow-[0_0_48px_rgba(59,130,246,0.5)] hover:brightness-110',
+          'bg-[linear-gradient(135deg,#14532D,#16A34A)] text-white shadow-[0_0_30px_rgba(22,163,74,0.25)] hover:shadow-[0_0_48px_rgba(22,163,74,0.5)] hover:brightness-110',
         secondary:
-          'bg-white/5 text-[var(--color-text-primary)] border border-[rgba(59,130,246,0.2)] hover:bg-white/10 hover:border-[rgba(59,130,246,0.4)]',
+          'bg-[rgba(22,163,74,0.06)] text-[var(--color-text-primary)] border border-[rgba(22,163,74,0.2)] hover:bg-[rgba(22,163,74,0.12)] hover:border-[rgba(22,163,74,0.4)]',
         ghost:
-          'text-[var(--color-text-secondary)] hover:bg-white/5 hover:text-[var(--color-text-primary)]',
+          'text-[var(--color-text-secondary)] hover:bg-[rgba(22,163,74,0.06)] hover:text-[var(--color-text-primary)]',
         outline:
-          'border border-[rgba(59,130,246,0.25)] bg-transparent text-[var(--color-text-primary)] hover:bg-white/5 hover:border-[rgba(59,130,246,0.5)]',
+          'border border-[rgba(22,163,74,0.25)] bg-transparent text-[var(--color-text-primary)] hover:bg-[rgba(22,163,74,0.06)] hover:border-[rgba(22,163,74,0.5)]',
         destructive:
           'bg-[var(--color-error)] text-white hover:bg-[var(--color-error)]/90',
         link:

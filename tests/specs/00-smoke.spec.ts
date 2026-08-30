@@ -4,7 +4,7 @@ import { fillCoreStep2, setScenario } from '../helpers';
 test('harness: Step 1 renders and advances to Step 2', async ({ page }) => {
   await setScenario(page, 'default');
   await page.goto('/setup');
-  await expect(page.getByRole('heading', { name: 'Mega CRM' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'TH CRM' })).toBeVisible();
   await page.getByRole('button', { name: /Ja tenho tudo isso/ }).click();
   await expect(page.getByRole('heading', { name: 'Credenciais core' })).toBeVisible();
 });

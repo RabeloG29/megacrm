@@ -24,7 +24,7 @@ interface CreateFieldInput {
   required: boolean;
 }
 
-const TAG_DEFAULT_COLOR = '#60A5FA';
+const TAG_DEFAULT_COLOR = '#4ADE80';
 
 interface UseDealDetailResult {
   contact: ContactFull | null;

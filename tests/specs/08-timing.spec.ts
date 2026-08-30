@@ -9,7 +9,7 @@ test('per-screen load timing (flag > 2s)', async ({ page }) => {
 
   let t = Date.now();
   await page.goto('/setup');
-  await expect(page.getByRole('heading', { name: 'Mega CRM' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'TH CRM' })).toBeVisible();
   timings['step1'] = Date.now() - t;
 
   t = Date.now();

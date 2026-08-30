@@ -119,7 +119,7 @@ export function BusinessHoursSettings() {
           {DAY_ORDER.map(({ key, label }) => (
             <div
               key={key}
-              className="grid grid-cols-[auto_100px_1fr_1fr] items-center gap-3 p-3 rounded-lg border border-[rgba(59,130,246,0.1)] bg-white/[0.02]"
+              className="grid grid-cols-[auto_100px_1fr_1fr] items-center gap-3 p-3 rounded-lg border border-[rgba(22,163,74,0.1)] bg-[rgba(22,163,74,0.05)]"
             >
               <input
                 type="checkbox"
@@ -155,7 +155,7 @@ export function BusinessHoursSettings() {
             onChange={(e) => setOffHoursMsg(e.target.value)}
             rows={3}
             disabled={saving}
-            className="w-full rounded-lg border border-[rgba(59,130,246,0.2)] bg-white/[0.03] px-4 py-3 text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--accent-primary)] focus:bg-white/[0.06]"
+            className="w-full rounded-lg border border-[rgba(22,163,74,0.2)] bg-[rgba(22,163,74,0.06)] px-4 py-3 text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--accent-primary)] focus:bg-[rgba(22,163,74,0.10)]"
           />
         </div>
 

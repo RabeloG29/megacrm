@@ -13,7 +13,7 @@ for (const vp of VIEWPORTS) {
     await setScenario(page, 'default');
     await page.setViewportSize({ width: vp.width, height: vp.height });
     await page.goto('/setup');
-    await expect(page.getByRole('heading', { name: 'Mega CRM' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'TH CRM' })).toBeVisible();
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );

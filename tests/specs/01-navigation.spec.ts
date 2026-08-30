@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }) => setScenario(page, 'default'));
 
 test('Step 1 renders prep cards and the only action is advance', async ({ page }) => {
   await page.goto('/setup');
-  await expect(page.getByRole('heading', { name: 'Mega CRM' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'TH CRM' })).toBeVisible();
   await expect(page.getByText('Criar projeto Supabase')).toBeVisible();
   await expect(page.getByText('Gerar PAT Supabase')).toBeVisible();
   await expect(page.getByText('Gerar Vercel Token')).toBeVisible();
@@ -44,7 +44,7 @@ test('Step 2 -> Step 1 backward navigation works (Voltar)', async ({ page }) => 
   await page.getByRole('button', { name: /Ja tenho tudo isso/ }).click();
   await expect(page.getByRole('heading', { name: 'Credenciais core' })).toBeVisible();
   await page.getByRole('button', { name: 'Voltar' }).click();
-  await expect(page.getByRole('heading', { name: 'Mega CRM' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'TH CRM' })).toBeVisible();
 });
 
 test('direct deep-link to ?step=4 shows owner login gate (cannot jump past auth)', async ({ page }) => {

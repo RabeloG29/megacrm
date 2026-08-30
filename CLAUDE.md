@@ -539,24 +539,24 @@ supabase/functions/
 
 ---
 
-## Design System — Dark Mode Glassmorphism (OBRIGATÓRIO)
+## Design System — Light Mode Glassmorphism, verde & branco (OBRIGATÓRIO)
 
-A plataforma é **dark mode only**. Não implementar light mode. Não criar
-toggle de tema.
+A plataforma é **light mode only** (fundo claro, acento verde — identidade
+TH CRM, nutrição). Não implementar dark mode. Não criar toggle de tema.
 
 ### Tokens de cor
 
 | Token                  | Valor                                        |
 |------------------------|----------------------------------------------|
-| `--bg-primary`         | `#0A0A0F`                                    |
-| `--bg-card`            | `rgba(15, 18, 35, 0.6)`                      |
-| `--border-card`        | `rgba(59, 130, 246, 0.15)`                   |
-| `--accent-primary`     | `#3B82F6`                                    |
-| `--accent-secondary`   | `#60A5FA`                                    |
-| `--gradient-primary`   | `linear-gradient(135deg, #1E3A8A, #3B82F6)`  |
-| `--text-primary`       | `#F8FAFC`                                    |
-| `--text-secondary`     | `#94A3B8`                                    |
-| `--text-label`         | `#CBD5E1`                                    |
+| `--bg-primary`         | `#F3FBF6`                                    |
+| `--bg-card`            | `rgba(255, 255, 255, 0.7)`                   |
+| `--border-card`        | `rgba(22, 163, 74, 0.18)`                    |
+| `--accent-primary`     | `#16A34A`                                    |
+| `--accent-secondary`   | `#4ADE80`                                    |
+| `--gradient-primary`   | `linear-gradient(135deg, #14532D, #16A34A)`  |
+| `--text-primary`       | `#0F2A1C`                                    |
+| `--text-secondary`     | `#5B7566`                                    |
+| `--text-label`         | `#46574C`                                    |
 | `--color-success`      | `#10B981`                                    |
 | `--color-error`        | `#EF4444`                                    |
 
@@ -564,10 +564,10 @@ toggle de tema.
 
 ```css
 body {
-  background-color: #0A0A0F;
+  background-color: #F3FBF6;
   background-image:
-    radial-gradient(ellipse at 20% 0%, rgba(59, 130, 246, 0.06), transparent 50%),
-    radial-gradient(ellipse at 80% 100%, rgba(37, 99, 235, 0.04), transparent 50%);
+    radial-gradient(ellipse at 20% 0%, rgba(22, 163, 74, 0.07), transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(74, 222, 128, 0.05), transparent 50%);
   min-height: 100vh;
 }
 ```
@@ -576,22 +576,22 @@ body {
 
 ```css
 .glass-card {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.02));
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(240, 253, 244, 0.65));
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
-  border: 1px solid rgba(59, 130, 246, 0.25);
+  border: 1px solid rgba(22, 163, 74, 0.22);
   border-radius: 16px;
   box-shadow:
-    0 0 20px rgba(59, 130, 246, 0.06),
-    inset 0 1px 0 rgba(59, 130, 246, 0.1);
+    0 4px 20px rgba(22, 163, 74, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .glass-card:hover {
-  border-color: rgba(59, 130, 246, 0.45);
+  border-color: rgba(22, 163, 74, 0.45);
   box-shadow:
-    0 0 30px rgba(59, 130, 246, 0.12),
-    0 0 60px rgba(59, 130, 246, 0.04),
-    inset 0 1px 0 rgba(59, 130, 246, 0.2);
+    0 8px 32px rgba(22, 163, 74, 0.14),
+    0 0 60px rgba(22, 163, 74, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 ```
@@ -617,13 +617,13 @@ body {
 
 ### Bordas e separadores
 
-- Borders padrão: `rgba(59, 130, 246, 0.12)`.
-- Dividers: `rgba(59, 130, 246, 0.08)`.
-- Sidebar `border-right`: `1px solid rgba(59, 130, 246, 0.1)`.
-- Header `border-bottom`: `1px solid rgba(59, 130, 246, 0.08)`.
+- Borders padrão: `rgba(22, 163, 74, 0.14)`.
+- Dividers: `rgba(22, 163, 74, 0.10)`.
+- Sidebar `border-right`: `1px solid rgba(22, 163, 74, 0.1)`.
+- Header `border-bottom`: `1px solid rgba(22, 163, 74, 0.08)`.
 
 Componentes devem usar `var(--accent-primary)` / `var(--accent-secondary)` em
-vez de hardcodear `#3B82F6` / `#60A5FA`. Os hex listados acima são apenas o
+vez de hardcodear `#16A34A` / `#4ADE80`. Os hex listados acima são apenas o
 fallback default.
 
 ---

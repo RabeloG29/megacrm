@@ -206,7 +206,7 @@ export async function registerWebhook(
   await zfetch(apiKey, '/webhooks/settings', {
     method: 'POST',
     body: JSON.stringify({
-      name: 'Mega CRM',
+      name: 'TH CRM',
       url: opts.url,
       secret: opts.secret,
       events: opts.events ?? ZERNIO_WEBHOOK_EVENTS,

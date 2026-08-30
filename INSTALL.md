@@ -1,6 +1,6 @@
-# Guia de Instalação — Mega CRM (Agentise)
+# Guia de Instalação — TH CRM (Agentise)
 
-White-label self-hosted: **Mega CRM** — WhatsApp oficial + funil comercial,
+White-label self-hosted: **TH CRM** — WhatsApp oficial + funil comercial,
 entrega de projetos e educação numa instância só.
 
 > **O que é.** Plataforma de WhatsApp oficial (templates, campanhas, inbox com

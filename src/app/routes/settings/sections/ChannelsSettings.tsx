@@ -89,7 +89,7 @@ function MemberAvatar({ name, avatarUrl }: { name: string; avatarUrl: string | n
     .map((p) => p[0]?.toUpperCase() ?? '')
     .join('');
   return (
-    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[rgba(59,130,246,0.18)] text-[10px] font-bold text-[#60A5FA]">
+    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[rgba(22,163,74,0.18)] text-[10px] font-bold text-[#4ADE80]">
       {initials || <UserRound className="h-3.5 w-3.5" />}
     </span>
   );
@@ -489,7 +489,7 @@ export function ChannelsSettings() {
             <button
               onClick={() => void toggleActive(channel)}
               disabled={busy === channel.id}
-              className="rounded-lg border border-[rgba(59,130,246,0.25)] bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-[var(--color-text-primary)] transition hover:border-[var(--accent-primary)] disabled:opacity-50"
+              className="rounded-lg border border-[rgba(22,163,74,0.25)] bg-[rgba(22,163,74,0.06)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-primary)] transition hover:border-[var(--accent-primary)] disabled:opacity-50"
             >
               {channel.is_active ? 'Desativar' : 'Reativar'}
             </button>
@@ -510,7 +510,7 @@ export function ChannelsSettings() {
         </div>
 
         {/* Operador responsável — conversas deste número vão direto para ele. */}
-        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[rgba(59,130,246,0.08)] pt-3">
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[rgba(22,163,74,0.08)] pt-3">
           {owner ? (
             <MemberAvatar name={operatorLabel(owner)} avatarUrl={owner.avatar_url} />
           ) : (
@@ -522,7 +522,7 @@ export function ChannelsSettings() {
             value={channel.assigned_member ?? ''}
             disabled={busy === channel.id}
             onChange={(e) => void setAssignedMember(channel, e.target.value || null)}
-            className="min-w-0 flex-1 rounded-lg border border-[rgba(59,130,246,0.2)] bg-[rgba(15,18,35,0.8)] px-3 py-1.5 text-xs text-[var(--color-text-primary)] focus:border-[var(--accent-primary)] focus:outline-none"
+            className="min-w-0 flex-1 rounded-lg border border-[rgba(22,163,74,0.2)] bg-[rgba(255,255,255,0.8)] px-3 py-1.5 text-xs text-[var(--color-text-primary)] focus:border-[var(--accent-primary)] focus:outline-none"
             title="Operador responsável — conversas deste número são atribuídas a ele"
           >
             <option value="">Sem operador fixo (round-robin da equipe)</option>
@@ -535,10 +535,10 @@ export function ChannelsSettings() {
         </div>
 
         {/* IA por número — refina o toggle global (Configurações → Agente IA). */}
-        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[rgba(59,130,246,0.08)] pt-3">
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[rgba(22,163,74,0.08)] pt-3">
           <Bot
             className="h-4 w-4 shrink-0"
-            style={{ color: channel.ai_enabled ? '#60A5FA' : 'var(--color-text-secondary)' }}
+            style={{ color: channel.ai_enabled ? '#4ADE80' : 'var(--color-text-secondary)' }}
           />
           <div className="min-w-0 flex-1">
             <span className="text-xs font-medium text-[var(--color-text-primary)]">
@@ -570,7 +570,7 @@ export function ChannelsSettings() {
 
         {/* Auto-add ao funil — todo lead que entrar em contato vira um card no
             funil/etapa escolhidos. Desligado por padrão. */}
-        <div className="mt-3 border-t border-[rgba(59,130,246,0.08)] pt-3">
+        <div className="mt-3 border-t border-[rgba(22,163,74,0.08)] pt-3">
           <div className="flex flex-wrap items-center gap-2">
             <Filter
               className="h-4 w-4 shrink-0"
@@ -617,7 +617,7 @@ export function ChannelsSettings() {
                       funnel_stage_id: firstStageOf(e.target.value || null),
                     })
                   }
-                  className="rounded-lg border border-[rgba(59,130,246,0.2)] bg-[rgba(15,18,35,0.8)] px-3 py-1.5 text-xs text-[var(--color-text-primary)] focus:border-[var(--accent-primary)] focus:outline-none"
+                  className="rounded-lg border border-[rgba(22,163,74,0.2)] bg-[rgba(255,255,255,0.8)] px-3 py-1.5 text-xs text-[var(--color-text-primary)] focus:border-[var(--accent-primary)] focus:outline-none"
                 >
                   {pipelines.length === 0 ? (
                     <option value="">Nenhum funil criado</option>
@@ -637,7 +637,7 @@ export function ChannelsSettings() {
                   onChange={(e) =>
                     void updateChannelFunnel(channel, { funnel_stage_id: e.target.value || null })
                   }
-                  className="rounded-lg border border-[rgba(59,130,246,0.2)] bg-[rgba(15,18,35,0.8)] px-3 py-1.5 text-xs text-[var(--color-text-primary)] focus:border-[var(--accent-primary)] focus:outline-none"
+                  className="rounded-lg border border-[rgba(22,163,74,0.2)] bg-[rgba(255,255,255,0.8)] px-3 py-1.5 text-xs text-[var(--color-text-primary)] focus:border-[var(--accent-primary)] focus:outline-none"
                 >
                   {stages
                     .filter((s) => s.pipeline_id === channel.funnel_pipeline_id)
@@ -741,12 +741,12 @@ export function ChannelsSettings() {
           </div>
 
           {/* Zernio API Key — única ação disponível no CRM */}
-          <div className="rounded-xl border border-[rgba(59,130,246,0.15)] bg-white/[0.02] p-4">
+          <div className="rounded-xl border border-[rgba(22,163,74,0.15)] bg-[rgba(22,163,74,0.05)] p-4">
             <button
               onClick={() => setShowZernioKey((v) => !v)}
               className="flex w-full items-center gap-3 text-left"
             >
-              <KeyRound className="h-4 w-4 shrink-0 text-[#60A5FA]" />
+              <KeyRound className="h-4 w-4 shrink-0 text-[#4ADE80]" />
               <div className="min-w-0 flex-1">
                 <span className="text-sm font-medium text-[var(--color-text-primary)]">
                   Zernio API Key
@@ -766,14 +766,14 @@ export function ChannelsSettings() {
               />
             </button>
             {showZernioKey ? (
-              <div className="mt-3 space-y-3 border-t border-[rgba(59,130,246,0.08)] pt-3">
+              <div className="mt-3 space-y-3 border-t border-[rgba(22,163,74,0.08)] pt-3">
                 <input
                   value={zernioKey}
                   onChange={(e) => setZernioKey(e.target.value)}
                   type="password"
                   autoComplete="off"
                   placeholder={zernioKeyExists ? '•••••••••••• (configurada)' : 'Cole a Zernio API Key'}
-                  className="w-full rounded-lg border border-[rgba(59,130,246,0.2)] bg-white/[0.03] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--accent-primary)] focus:outline-none"
+                  className="w-full rounded-lg border border-[rgba(22,163,74,0.2)] bg-[rgba(22,163,74,0.06)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--accent-primary)] focus:outline-none"
                 />
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-xs text-[var(--color-text-secondary)]">
@@ -783,7 +783,7 @@ export function ChannelsSettings() {
                   <button
                     onClick={() => void saveZernioKey()}
                     disabled={!zernioKey.trim() || savingZernioKey || connectingZernio}
-                    className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-gradient-to-br from-[#1E3A8A] to-[#3B82F6] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                    className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-gradient-to-br from-[#14532D] to-[#16A34A] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                   >
                     {savingZernioKey || connectingZernio ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -797,7 +797,7 @@ export function ChannelsSettings() {
 
           {/* Seletor de conta Zernio (API Key com várias contas WhatsApp) */}
           {zernioChoices ? (
-            <div className="rounded-xl border border-[rgba(59,130,246,0.15)] bg-white/[0.02] p-4">
+            <div className="rounded-xl border border-[rgba(22,163,74,0.15)] bg-[rgba(22,163,74,0.05)] p-4">
               <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">
                 Escolha a conta WhatsApp para conectar
               </h4>
@@ -807,7 +807,7 @@ export function ChannelsSettings() {
                     key={acc.id}
                     onClick={() => void connectZernio(acc.id)}
                     disabled={connectingZernio}
-                    className="flex w-full items-center justify-between rounded-lg border border-[rgba(59,130,246,0.2)] bg-white/[0.02] p-3 text-left text-sm text-[var(--color-text-primary)] transition hover:border-[var(--accent-primary)]"
+                    className="flex w-full items-center justify-between rounded-lg border border-[rgba(22,163,74,0.2)] bg-[rgba(22,163,74,0.05)] p-3 text-left text-sm text-[var(--color-text-primary)] transition hover:border-[var(--accent-primary)]"
                   >
                     <span className="truncate">{acc.name}</span>
                     <span className="ml-3 shrink-0 font-mono text-[11px] text-[var(--color-text-secondary)]">
@@ -880,7 +880,7 @@ export function ChannelsSettings() {
 
           {/* Form de nova instância UAZAPI */}
           {showUazapiForm ? (
-            <div className="space-y-3 rounded-xl border border-[rgba(59,130,246,0.15)] bg-white/[0.02] p-4">
+            <div className="space-y-3 rounded-xl border border-[rgba(22,163,74,0.15)] bg-[rgba(22,163,74,0.05)] p-4">
               <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">
                 Nova instância UAZAPI
               </h4>
@@ -888,32 +888,32 @@ export function ChannelsSettings() {
               value={uazForm.label}
               onChange={(e) => setUazForm((f) => ({ ...f, label: e.target.value }))}
               placeholder="Nome do número (ex: WhatsApp da Maria)"
-              className="w-full rounded-lg border border-[rgba(59,130,246,0.2)] bg-white/[0.03] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--accent-primary)] focus:outline-none"
+              className="w-full rounded-lg border border-[rgba(22,163,74,0.2)] bg-[rgba(22,163,74,0.06)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--accent-primary)] focus:outline-none"
             />
             <input
               value={uazForm.serverUrl}
               onChange={(e) => setUazForm((f) => ({ ...f, serverUrl: e.target.value }))}
               placeholder="Server URL (https://…uazapi.com)"
-              className="w-full rounded-lg border border-[rgba(59,130,246,0.2)] bg-white/[0.03] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--accent-primary)] focus:outline-none"
+              className="w-full rounded-lg border border-[rgba(22,163,74,0.2)] bg-[rgba(22,163,74,0.06)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--accent-primary)] focus:outline-none"
             />
             <input
               value={uazForm.token}
               onChange={(e) => setUazForm((f) => ({ ...f, token: e.target.value }))}
               placeholder="Instance Token"
               type="password"
-              className="w-full rounded-lg border border-[rgba(59,130,246,0.2)] bg-white/[0.03] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--accent-primary)] focus:outline-none"
+              className="w-full rounded-lg border border-[rgba(22,163,74,0.2)] bg-[rgba(22,163,74,0.06)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--accent-primary)] focus:outline-none"
             />
               <div className="flex justify-end gap-2">
                 <button
                   onClick={() => setShowUazapiForm(false)}
-                  className="rounded-lg border border-[rgba(59,130,246,0.2)] px-4 py-2 text-sm text-[var(--color-text-secondary)]"
+                  className="rounded-lg border border-[rgba(22,163,74,0.2)] px-4 py-2 text-sm text-[var(--color-text-secondary)]"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={() => void saveUazapiChannel()}
                   disabled={savingUaz || !uazForm.serverUrl.trim() || !uazForm.token.trim()}
-                  className="rounded-lg bg-gradient-to-br from-[#1E3A8A] to-[#3B82F6] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                  className="rounded-lg bg-gradient-to-br from-[#14532D] to-[#16A34A] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                 >
                   {savingUaz ? 'Conectando...' : 'Conectar e cadastrar webhook'}
                 </button>

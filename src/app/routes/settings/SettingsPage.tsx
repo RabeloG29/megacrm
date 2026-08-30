@@ -110,8 +110,8 @@ export default function SettingsPage() {
                   className={cn(
                     'flex items-center gap-3 p-2.5 rounded-lg text-left transition-colors',
                     isActive
-                      ? 'bg-[rgba(59,130,246,0.1)] text-[var(--color-text-primary)]'
-                      : 'text-[var(--color-text-secondary)] hover:bg-white/[0.03]',
+                      ? 'bg-[rgba(22,163,74,0.1)] text-[var(--color-text-primary)]'
+                      : 'text-[var(--color-text-secondary)] hover:bg-[rgba(22,163,74,0.06)]',
                   )}
                 >
                   <Icon className="h-4 w-4 shrink-0" />

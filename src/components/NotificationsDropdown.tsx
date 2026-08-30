@@ -66,8 +66,8 @@ export function NotificationsDropdown() {
       </Button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-[360px] max-w-[calc(100vw-1.5rem)] rounded-xl border border-[rgba(59,130,246,0.25)] bg-[#0F1223] shadow-2xl z-50 overflow-hidden max-h-[70vh] flex flex-col">
-          <div className="flex items-center justify-between p-3 border-b border-[rgba(59,130,246,0.1)]">
+        <div className="absolute right-0 mt-2 w-[360px] max-w-[calc(100vw-1.5rem)] rounded-xl border border-[rgba(22,163,74,0.25)] bg-white shadow-2xl z-50 overflow-hidden max-h-[70vh] flex flex-col">
+          <div className="flex items-center justify-between p-3 border-b border-[rgba(22,163,74,0.1)]">
             <div>
               <div className="text-label">Notificações</div>
               <div className="text-xs text-[var(--color-text-secondary)]">
@@ -88,7 +88,7 @@ export function NotificationsDropdown() {
                 Sem notificações.
               </div>
             ) : (
-              <ul className="divide-y divide-[rgba(59,130,246,0.06)]">
+              <ul className="divide-y divide-[rgba(22,163,74,0.06)]">
                 {notifications.map((n) => {
                   const Icon = iconFor(n.type);
                   return (
@@ -98,8 +98,8 @@ export function NotificationsDropdown() {
                         onClick={() => handleItemClick(n)}
                         className={cn(
                           'w-full text-left p-3 flex items-start gap-3 transition-colors',
-                          'hover:bg-white/[0.03]',
-                          !n.is_read && 'bg-[rgba(59,130,246,0.04)]',
+                          'hover:bg-[rgba(22,163,74,0.06)]',
+                          !n.is_read && 'bg-[rgba(22,163,74,0.04)]',
                         )}
                       >
                         <div
@@ -107,7 +107,7 @@ export function NotificationsDropdown() {
                             'h-8 w-8 rounded-full flex items-center justify-center shrink-0',
                             n.type === 'handoff'
                               ? 'bg-[rgba(245,158,11,0.15)] text-[#FBBF24]'
-                              : 'bg-[rgba(59,130,246,0.15)] text-[var(--accent-primary)]',
+                              : 'bg-[rgba(22,163,74,0.15)] text-[var(--accent-primary)]',
                           )}
                         >
                           <Icon className="h-4 w-4" />
