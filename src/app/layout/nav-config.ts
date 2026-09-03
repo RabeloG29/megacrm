@@ -8,6 +8,7 @@ import {
   KanbanSquare,
   Zap,
   Building2,
+  CalendarDays,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -34,6 +35,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/inbox', label: 'Inbox', icon: Inbox },
   { to: '/funil', label: 'Funil', icon: KanbanSquare, adminOnly: true },
   { to: '/contacts', label: 'Contatos', icon: Users },
+  { to: '/calendario', label: 'Calendário', icon: CalendarDays },
   { to: '/campaigns', label: 'Campanhas', icon: Megaphone },
   { to: '/automations', label: 'Automações', icon: Zap, adminOnly: true },
   { to: '/ai-agent', label: 'Agente de IA', icon: Bot, adminOnly: true },
