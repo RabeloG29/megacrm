@@ -6,10 +6,16 @@ import type { Script } from '@/types/crm';
 // CRUD dos scripts (mensagens prontas) — Configurações → Scripts. Usados no
 // composer do Inbox (inserir no chat) e nas automações (Follow-ups UAZAPI /
 // Funil "Disparar mensagem de texto") para reaproveitar textos já escritos.
+// Podem ter imagem e/ou PDF anexados (ver ScriptsSettings.tsx), reenviados
+// junto com o texto quando o script é usado no Inbox.
 
 interface ScriptInput {
   title: string;
   content: string;
+  image_url?: string | null;
+  image_path?: string | null;
+  pdf_url?: string | null;
+  pdf_path?: string | null;
 }
 
 interface UseScriptsResult {
@@ -21,6 +27,8 @@ interface UseScriptsResult {
   update: (id: string, patch: Partial<ScriptInput>) => Promise<void>;
   remove: (id: string) => Promise<void>;
 }
+
+const SCRIPT_COLUMNS = 'id, title, content, image_url, image_path, pdf_url, pdf_path';
 
 export function useScripts(): UseScriptsResult {
   const { userId } = useAppUser();
@@ -35,7 +43,7 @@ export function useScripts(): UseScriptsResult {
     const supabase = getSupabase();
     const { data, error: err } = await supabase
       .from('scripts')
-      .select('id, title, content')
+      .select(SCRIPT_COLUMNS)
       .order('title', { ascending: true });
     if (err) setError(err.message);
     else setScripts((data ?? []) as Script[]);
@@ -49,11 +57,18 @@ export function useScripts(): UseScriptsResult {
   const create: UseScriptsResult['create'] = async (input) => {
     if (!userId) return null;
     const supabase = getSupabase();
-    const payload = { title: input.title.trim(), content: input.content.trim() };
+    const payload = {
+      title: input.title.trim(),
+      content: input.content.trim(),
+      image_url: input.image_url ?? null,
+      image_path: input.image_path ?? null,
+      pdf_url: input.pdf_url ?? null,
+      pdf_path: input.pdf_path ?? null,
+    };
     const { data, error: err } = await supabase
       .from('scripts')
       .insert(payload)
-      .select('id, title, content')
+      .select(SCRIPT_COLUMNS)
       .single();
     if (err) {
       setError(err.message);
@@ -68,6 +83,10 @@ export function useScripts(): UseScriptsResult {
     const cleanPatch = {
       ...(patch.title != null ? { title: patch.title.trim() } : {}),
       ...(patch.content != null ? { content: patch.content.trim() } : {}),
+      ...(patch.image_url !== undefined ? { image_url: patch.image_url } : {}),
+      ...(patch.image_path !== undefined ? { image_path: patch.image_path } : {}),
+      ...(patch.pdf_url !== undefined ? { pdf_url: patch.pdf_url } : {}),
+      ...(patch.pdf_path !== undefined ? { pdf_path: patch.pdf_path } : {}),
     };
     const { error: err } = await supabase
       .from('scripts')
