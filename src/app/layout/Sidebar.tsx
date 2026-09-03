@@ -38,13 +38,13 @@ export function Sidebar() {
         )}
       >
         <img
-          src="/agentise-mark.png"
-          alt="Agentise"
-          className="h-9 w-9 shrink-0 rounded-lg shadow-[0_0_20px_rgba(22,163,74,0.35)]"
+          src="/thsantana-logo.png"
+          alt="CRM THSANTANA"
+          className="h-9 w-9 shrink-0 rounded-lg object-contain shadow-[0_0_20px_rgba(22,163,74,0.35)]"
         />
         {!collapsed && (
           <div className="leading-tight min-w-0 flex-1">
-            <div className="text-sm font-bold text-[var(--color-text-primary)]">TH CRM</div>
+            <div className="text-sm font-bold text-[var(--color-text-primary)]">CRM THSANTANA</div>
           </div>
         )}
       </div>
