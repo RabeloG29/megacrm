@@ -48,6 +48,7 @@ interface ContactRow {
   id: string;
   phone: string;
   name: string | null;
+  email: string | null;
   custom_fields: Record<string, unknown> | null;
 }
 
@@ -55,14 +56,19 @@ function firstName(name: string): string {
   return name.trim().split(/\s+/)[0] ?? name;
 }
 
-// Resolve {{token}} do corpo livre a partir do contato. `missing` lista
-// tokens de custom_fields sem valor — o chamador falha a linha nesse caso.
+// Resolve {{token}} do corpo livre a partir do contato. Built-ins alinhados
+// com scriptVariables.ts (Configurações → Scripts): nome/primeiro_nome/
+// telefone/email têm o MESMO comportamento nos dois lugares, pra um texto
+// escrito como script funcionar sem ajuste nenhum aqui. `missing` lista só
+// tokens de custom_fields sem valor — o chamador falha a linha nesse caso;
+// email vazio não falha (mesma tolerância do script).
 function renderMessage(body: string, contact: ContactRow): { text: string; missing: string[] } {
   const missing: string[] = [];
   const text = body.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_whole, token: string) => {
     if (token === 'nome') return contact.name?.trim() || 'Cliente';
     if (token === 'primeiro_nome') return contact.name?.trim() ? firstName(contact.name) : 'Cliente';
     if (token === 'telefone') return contact.phone;
+    if (token === 'email') return contact.email?.trim() || '';
     const raw = contact.custom_fields?.[token];
     const value = raw == null ? '' : String(raw).trim();
     if (!value) {
@@ -238,7 +244,7 @@ Deno.serve(async (req) => {
 
     const { data: contactData } = await admin
       .from('contacts')
-      .select('id, phone, name, custom_fields')
+      .select('id, phone, name, email, custom_fields')
       .eq('id', row.contact_id)
       .maybeSingle();
     const contact = contactData as ContactRow | null;

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog } from '@/components/ui/dialog';
 import { useTags } from '@/hooks/useTags';
+import { useScripts } from '@/hooks/useScripts';
 import { useUazapiBlast, useUazapiChannels } from '@/hooks/useUazapiBlast';
 import { CsvAudiencePicker } from '@/components/campaigns/CsvAudiencePicker';
 import { getSupabase } from '@/lib/supabase';
@@ -52,23 +53,32 @@ const SPEED_OPTIONS: Array<{
   },
 ];
 
+// Mesmo conjunto de variáveis built-in dos Scripts (Configurações → Scripts,
+// scriptVariables.ts) — os textos são pensados pra ir e voltar entre os dois
+// lugares sem precisar reescrever token nenhum.
 const VAR_BUILTINS: Array<{ token: string; label: string }> = [
   { token: 'nome', label: 'Nome' },
   { token: 'primeiro_nome', label: 'Primeiro nome' },
   { token: 'telefone', label: 'Telefone' },
+  { token: 'email', label: 'E-mail' },
 ];
 
 export function UazapiBlastWizard({ open, onClose, onSaved }: UazapiBlastWizardProps) {
   const { tags } = useTags();
+  const { scripts } = useScripts();
   const { channels } = useUazapiChannels();
   const { createAndQueue, previewAudience } = useUazapiBlast();
 
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [channelId, setChannelId] = useState('');
+  const [scriptId, setScriptId] = useState('');
   const [messageBody, setMessageBody] = useState('');
   const [customVarKey, setCustomVarKey] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const selectedScript = useMemo(() => scripts.find((s) => s.id === scriptId) ?? null, [scripts, scriptId]);
+  const selectedScriptHasAttachment = !!(selectedScript?.image_url || selectedScript?.pdf_url);
 
   const [audienceSource, setAudienceSource] = useState<AudienceSourceMode>('crm');
   const [audienceMode, setAudienceMode] = useState<AudienceMode>('all');
@@ -91,6 +101,7 @@ export function UazapiBlastWizard({ open, onClose, onSaved }: UazapiBlastWizardP
     if (!open) return;
     setStep(0);
     setName('');
+    setScriptId('');
     setMessageBody('');
     setCustomVarKey('');
     setAudienceSource('crm');
@@ -295,7 +306,41 @@ export function UazapiBlastWizard({ open, onClose, onSaved }: UazapiBlastWizardP
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="b_message">Mensagem (texto livre)</Label>
+            <Label htmlFor="b_script">Mensagem</Label>
+            {scripts.length === 0 ? (
+              <p className="text-xs text-[var(--color-text-secondary)] opacity-80">
+                Nenhum script cadastrado ainda em Configurações → Scripts. Você pode escrever a mensagem direto no
+                campo abaixo, ou cadastrar scripts pra reaproveitar aqui depois.
+              </p>
+            ) : (
+              <select
+                id="b_script"
+                value={scriptId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setScriptId(id);
+                  const script = scripts.find((s) => s.id === id);
+                  if (script) setMessageBody(script.content);
+                }}
+                disabled={submitting}
+                className="h-11 w-full rounded-lg border border-[rgba(22,163,74,0.2)] bg-[rgba(22,163,74,0.06)] px-4 text-sm text-[var(--color-text-primary)]"
+              >
+                <option value="">— escrever agora (não usar script) —</option>
+                {scripts.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.title}
+                  </option>
+                ))}
+              </select>
+            )}
+            {selectedScriptHasAttachment && (
+              <p className="text-[11px] text-[#FBBF24]">
+                Esse script tem imagem/PDF anexado — o disparo direto por enquanto manda só o texto, o anexo não vai junto.
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
             <textarea
               id="b_message"
               ref={textareaRef}
@@ -306,6 +351,9 @@ export function UazapiBlastWizard({ open, onClose, onSaved }: UazapiBlastWizardP
               rows={6}
               className="w-full rounded-lg border border-[rgba(22,163,74,0.2)] bg-[rgba(22,163,74,0.06)] px-4 py-3 text-sm text-[var(--color-text-primary)] resize-y"
             />
+            <p className="text-[11px] text-[var(--color-text-secondary)] opacity-70">
+              Carregou de um script? Pode editar à vontade aqui — não altera o script salvo em Configurações.
+            </p>
             <div className="flex flex-wrap items-center gap-2">
               {VAR_BUILTINS.map((v) => (
                 <button
