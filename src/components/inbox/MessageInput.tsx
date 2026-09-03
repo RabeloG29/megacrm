@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { getSupabase } from '@/lib/supabase';
 import type { SendResult } from '@/hooks/useMessages';
 import { useScripts } from '@/hooks/useScripts';
+import { renderScriptContent, type ScriptContact } from '@/lib/scriptVariables';
 import { TemplateRestartDialog } from './TemplateRestartDialog';
 
 interface MessageInputProps {
@@ -15,11 +16,14 @@ interface MessageInputProps {
   // Envio OTIMISTA de texto/nota: o balão aparece na hora e a requisição roda
   // em segundo plano (dono do estado é o useMessages).
   onSendText: (text: string, isPrivate: boolean) => Promise<SendResult>;
+    // Contato da conversa aberta — usado para preencher variáveis do script
+    // ({{nome}}, {{telefone}}, {{email}}) ao inserir no campo de texto.
+    contact?: ScriptContact | null;
 }
 
 const MAX_BYTES = 25 * 1024 * 1024;
 
-export function MessageInput({ conversationId, disabled, withinWindow = true, onSendText }: MessageInputProps) {
+export function MessageInput({ conversationId, disabled, withinWindow = true, onSendText, contact }: MessageInputProps) {
   const [content, setContent] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [showTemplate, setShowTemplate] = useState(false);
@@ -311,13 +315,13 @@ export function MessageInput({ conversationId, disabled, withinWindow = true, on
                           key={s.id}
                           type="button"
                           onClick={() => {
-                            setContent((prev) => (prev.trim() ? `${prev}\n${s.content}` : s.content));
+                            const rendered = renderScriptContent(s.content, contact); setContent((prev) => (prev.trim() ? `${prev}\n${rendered}` : rendered));
                             setShowScripts(false);
                           }}
                           className="block w-full rounded-md px-2 py-1.5 text-left text-sm text-[var(--color-text-primary)] hover:bg-white/5"
                         >
                           <div className="font-medium">{s.title}</div>
-                          <div className="truncate text-xs text-[var(--color-text-secondary)]">{s.content}</div>
+                          <div className="truncate text-xs text-[var(--color-text-secondary)]">{renderScriptContent(s.content, contact)}</div>
                         </button>
                       ))}
                     </div>
