@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useMemo, useState } from 'react';
 import {
+  MessageSquareText,
   MessagesSquare,
   Package,
   Settings as SettingsIcon,
@@ -14,12 +15,14 @@ import { AccountSettings } from './sections/AccountSettings';
 import { TeamSettings } from './sections/TeamSettings';
 import { ChannelsSettings } from './sections/ChannelsSettings';
 import { ProductsSettings } from './sections/ProductsSettings';
+import { ScriptsSettings } from './sections/ScriptsSettings';
 
 type TabId =
   | 'account'
   | 'team'
   | 'channels'
-  | 'products';
+  | 'products'
+  | 'scripts';
 
 interface TabDef {
   id: TabId;
@@ -72,6 +75,14 @@ export default function SettingsPage() {
             adminOnly: true,
             render: () => <ProductsSettings />,
           },
+          {
+            id: 'scripts',
+            label: 'Scripts',
+            hint: 'Mensagens prontas',
+            icon: MessageSquareText,
+            adminOnly: true,
+            render: () => <ScriptsSettings />,
+          },
         ] as TabDef[]
       ).filter((t) => !t.adminOnly || role === 'admin'),
     [role],
@@ -110,8 +121,8 @@ export default function SettingsPage() {
                   className={cn(
                     'flex items-center gap-3 p-2.5 rounded-lg text-left transition-colors',
                     isActive
-                      ? 'bg-[rgba(22,163,74,0.1)] text-[var(--color-text-primary)]'
-                      : 'text-[var(--color-text-secondary)] hover:bg-[rgba(22,163,74,0.06)]',
+                      ? 'bg-[rgba(59,130,246,0.1)] text-[var(--color-text-primary)]'
+                      : 'text-[var(--color-text-secondary)] hover:bg-white/[0.03]',
                   )}
                 >
                   <Icon className="h-4 w-4 shrink-0" />

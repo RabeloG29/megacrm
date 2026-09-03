@@ -14,7 +14,7 @@ export type Temperature = 'Frio' | 'Morno' | 'Quente';
 
 // Cores dos badges de temperatura (frio = azul/cinza, morno = amarelo, quente = laranja/vermelho).
 export const TEMPERATURE_STYLE: Record<Temperature, { label: string; className: string; dot: string }> = {
-  Frio: { label: 'Frio', className: 'bg-[rgba(74,222,128,0.14)] text-[#4ADE80]', dot: 'bg-[#4ADE80]' },
+  Frio: { label: 'Frio', className: 'bg-[rgba(96,165,250,0.14)] text-[#60A5FA]', dot: 'bg-[#60A5FA]' },
   Morno: { label: 'Morno', className: 'bg-[rgba(245,158,11,0.14)] text-[#FBBF24]', dot: 'bg-[#FBBF24]' },
   Quente: { label: 'Quente', className: 'bg-[rgba(239,68,68,0.14)] text-[#F87171]', dot: 'bg-[#F87171]' },
 };
@@ -73,6 +73,14 @@ export interface Product {
   description: string | null;
 }
 
+// Script (mensagem pronta) — reutilizável no chat do Inbox e selecionável
+// como texto de automações (Follow-ups UAZAPI / Funil "Disparar mensagem").
+export interface Script {
+  id: string;
+  title: string;
+  content: string;
+}
+
 // Produto associado a um deal, com valor/quantidade da compra (linha de
 // deal_products). Preenchido na venda; adição manual fica com value null.
 export interface DealProduct {
@@ -129,8 +137,8 @@ export const TRAFFIC_TYPE_LABEL: Record<string, string> = {
 
 export const TRAFFIC_TYPE_STYLE: Record<string, string> = {
   organico: 'bg-[rgba(16,185,129,0.14)] text-[#10B981]',
-  pago: 'bg-[rgba(74,222,128,0.14)] text-[#4ADE80]',
-  manual: 'bg-[rgba(22,163,74,0.06)] text-[var(--color-text-secondary)]',
+  pago: 'bg-[rgba(96,165,250,0.14)] text-[#60A5FA]',
+  manual: 'bg-white/5 text-[var(--color-text-secondary)]',
 };
 
 export const ORIGIN_CHANNEL_LABEL: Record<string, string> = {
@@ -274,7 +282,7 @@ export function dueTone(dueAt: string | null): DueTone {
 export const DUE_TONE_STYLE: Record<DueTone, string> = {
   overdue: 'bg-[rgba(239,68,68,0.14)] text-[var(--color-error)]',
   today: 'bg-[rgba(245,158,11,0.14)] text-[#FBBF24]',
-  future: 'bg-[rgba(22,163,74,0.14)] text-[var(--accent-secondary)]',
+  future: 'bg-[rgba(59,130,246,0.14)] text-[var(--accent-secondary)]',
 };
 
 // ---- Campos customizáveis (definições + valores por deal) ----

@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react';
 import { toast } from 'sonner';
-import { Clock, FileText, Loader2, Mic, Paperclip, Send, Square, StickyNote, X } from 'lucide-react';
+import { Clock, FileText, Loader2, MessageSquareText, Mic, Paperclip, Send, Square, StickyNote, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getSupabase } from '@/lib/supabase';
 import type { SendResult } from '@/hooks/useMessages';
+import { useScripts } from '@/hooks/useScripts';
 import { TemplateRestartDialog } from './TemplateRestartDialog';
 
 interface MessageInputProps {
@@ -22,9 +23,11 @@ export function MessageInput({ conversationId, disabled, withinWindow = true, on
   const [content, setContent] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [showTemplate, setShowTemplate] = useState(false);
+  const [showScripts, setShowScripts] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [sending, setSending] = useState(false); // só para mídia (upload real bloqueia)
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { scripts } = useScripts();
 
   // Gravação de áudio (voice note) via MediaRecorder.
   const [recording, setRecording] = useState(false);
@@ -170,7 +173,7 @@ export function MessageInput({ conversationId, disabled, withinWindow = true, on
   return (
     <form
       onSubmit={handleSubmit}
-      className="border-t border-[rgba(22,163,74,0.08)] p-4 space-y-3 glass-surface"
+      className="border-t border-[rgba(59,130,246,0.08)] p-4 space-y-3 glass-surface"
     >
       <div className="flex items-center gap-2">
         <button
@@ -179,7 +182,7 @@ export function MessageInput({ conversationId, disabled, withinWindow = true, on
           className={
             isPrivate
               ? 'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold bg-[rgba(245,158,11,0.12)] text-[#FBBF24]'
-              : 'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[rgba(22,163,74,0.06)]'
+              : 'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-white/5'
           }
           disabled={disabled || sending || Boolean(file)}
         >
@@ -217,7 +220,7 @@ export function MessageInput({ conversationId, disabled, withinWindow = true, on
       ) : null}
 
       {(withinWindow || isPrivate) && file && (
-        <div className="flex items-center gap-2 rounded-lg border border-[rgba(22,163,74,0.2)] bg-[rgba(22,163,74,0.06)] px-3 py-2 text-xs">
+        <div className="flex items-center gap-2 rounded-lg border border-[rgba(59,130,246,0.2)] bg-white/[0.03] px-3 py-2 text-xs">
           <Paperclip className="h-3.5 w-3.5 text-[var(--accent-primary)]" />
           <span className="truncate text-[var(--color-text-primary)]">{file.name}</span>
           <span className="text-[var(--color-text-secondary)]">
@@ -270,6 +273,58 @@ export function MessageInput({ conversationId, disabled, withinWindow = true, on
             >
               <Mic className="h-4 w-4" />
             </Button>
+            <div className="relative">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowScripts((v) => !v)}
+                disabled={disabled || sending}
+                aria-label="Inserir script"
+                title="Inserir mensagem pronta (script)"
+              >
+                <MessageSquareText className="h-4 w-4" />
+              </Button>
+              {showScripts && (
+                <div className="absolute bottom-full left-0 z-10 mb-2 max-h-72 w-72 overflow-y-auto rounded-lg glass-card p-2 shadow-xl">
+                  <div className="mb-1 flex items-center justify-between px-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+                      Scripts
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowScripts(false)}
+                      className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                      aria-label="Fechar"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  {scripts.length === 0 ? (
+                    <div className="px-2 py-2 text-xs text-[var(--color-text-secondary)]">
+                      Nenhum script cadastrado — crie em Configurações → Scripts.
+                    </div>
+                  ) : (
+                    <div className="space-y-0.5">
+                      {scripts.map((s) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => {
+                            setContent((prev) => (prev.trim() ? `${prev}\n${s.content}` : s.content));
+                            setShowScripts(false);
+                          }}
+                          className="block w-full rounded-md px-2 py-1.5 text-left text-sm text-[var(--color-text-primary)] hover:bg-white/5"
+                        >
+                          <div className="font-medium">{s.title}</div>
+                          <div className="truncate text-xs text-[var(--color-text-secondary)]">{s.content}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </>
         )}
         {recording && (
@@ -306,7 +361,7 @@ export function MessageInput({ conversationId, disabled, withinWindow = true, on
           className={
             isPrivate
               ? 'flex-1 rounded-lg border border-[rgba(245,158,11,0.3)] bg-[rgba(245,158,11,0.04)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[#FBBF24] resize-none'
-              : 'flex-1 rounded-lg border border-[rgba(22,163,74,0.2)] bg-[rgba(22,163,74,0.06)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--accent-primary)] resize-none'
+              : 'flex-1 rounded-lg border border-[rgba(59,130,246,0.2)] bg-white/[0.03] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--accent-primary)] resize-none'
           }
         />
         )}

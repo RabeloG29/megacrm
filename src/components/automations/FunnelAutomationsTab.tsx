@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Plus, Trash2, Zap } from 'lucide-react';
 import { getSupabase } from '@/lib/supabase';
 import { useOperators } from '@/hooks/useOperators';
+import { useScripts } from '@/hooks/useScripts';
 import { useTags } from '@/hooks/useTags';
 import { useTemplates } from '@/hooks/useTemplates';
 import { CRM_ACTION_LABEL, CRM_ACTION_TYPES, type CrmActionType } from '@/types/crm';
@@ -38,7 +39,7 @@ const ACTION_TYPES: { value: string; label: string }[] = [
 ];
 
 const inputCls =
-  'w-full rounded-lg border border-[rgba(22,163,74,0.2)] bg-[rgba(22,163,74,0.06)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--accent-primary)]';
+  'w-full rounded-lg border border-[rgba(59,130,246,0.2)] bg-white/[0.03] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--accent-primary)]';
 const labelCls = 'mb-1 block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]';
 
 export function FunnelAutomationsTab() {
@@ -51,6 +52,7 @@ export function FunnelAutomationsTab() {
   const { operators } = useOperators();
   const { tags } = useTags();
   const { templates } = useTemplates();
+  const { scripts } = useScripts();
   const approvedTemplates = useMemo(() => templates.filter((t) => t.status === 'approved'), [templates]);
 
   const reload = useCallback(async () => {
@@ -103,7 +105,7 @@ export function FunnelAutomationsTab() {
         </div>
         <button
           onClick={() => setCreating(true)}
-          className="ml-auto inline-flex items-center gap-2 self-end rounded-lg bg-gradient-to-br from-[#14532D] to-[#16A34A] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+          className="ml-auto inline-flex items-center gap-2 self-end rounded-lg bg-gradient-to-br from-[#1E3A8A] to-[#3B82F6] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
         >
           <Plus className="h-4 w-4" /> Nova automação
         </button>
@@ -118,6 +120,7 @@ export function FunnelAutomationsTab() {
           tags={tags}
           operators={operators}
           templates={approvedTemplates}
+          scripts={scripts}
           onDone={async () => { setCreating(false); await reload(); }}
           onCancel={() => setCreating(false)}
         />
@@ -139,7 +142,7 @@ export function FunnelAutomationsTab() {
                   <div className="flex items-center gap-2">
                     <Zap className="h-4 w-4 text-[var(--accent-primary)]" />
                     <span className="font-semibold text-[var(--color-text-primary)]">{a.name}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${a.is_active ? 'bg-[rgba(16,185,129,0.12)] text-[#10B981]' : 'bg-[rgba(22,163,74,0.06)] text-[var(--color-text-secondary)]'}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${a.is_active ? 'bg-[rgba(16,185,129,0.12)] text-[#10B981]' : 'bg-white/5 text-[var(--color-text-secondary)]'}`}>
                       {a.is_active ? 'Ativa' : 'Inativa'}
                     </span>
                   </div>
@@ -153,11 +156,11 @@ export function FunnelAutomationsTab() {
                     onClick={() => void toggleActive(a)}
                     role="switch"
                     aria-checked={a.is_active}
-                    className={`relative h-6 w-11 rounded-full transition-colors ${a.is_active ? 'bg-[var(--accent-primary)]' : 'bg-[rgba(22,163,74,0.12)]'}`}
+                    className={`relative h-6 w-11 rounded-full transition-colors ${a.is_active ? 'bg-[var(--accent-primary)]' : 'bg-white/10'}`}
                   >
                     <span className={`absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${a.is_active ? 'translate-x-5' : 'translate-x-0.5'}`} />
                   </button>
-                  <button onClick={() => void removeAutomation(a)} className="rounded-md p-1.5 text-[var(--color-error)] transition hover:bg-[rgba(22,163,74,0.06)]">
+                  <button onClick={() => void removeAutomation(a)} className="rounded-md p-1.5 text-[var(--color-error)] transition hover:bg-white/5">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
@@ -173,7 +176,7 @@ export function FunnelAutomationsTab() {
 // ---- Builder ----------------------------------------------------------------
 
 function AutomationForm({
-  stages, pipelineId, pipelines, allStages, tags, operators, templates, onDone, onCancel,
+  stages, pipelineId, pipelines, allStages, tags, operators, templates, scripts, onDone, onCancel,
 }: {
   stages: Stage[];
   pipelineId: string;
@@ -182,6 +185,7 @@ function AutomationForm({
   tags: { id: string; name: string }[];
   operators: { user_id: string; email: string }[];
   templates: { id: string; name: string }[];
+  scripts: { id: string; title: string; content: string }[];
   onDone: () => Promise<void>;
   onCancel: () => void;
 }) {
@@ -239,14 +243,14 @@ function AutomationForm({
       <div className="space-y-3">
         <span className={labelCls}>Ações</span>
         {actions.map((a, i) => (
-          <div key={i} className="rounded-lg border border-[rgba(22,163,74,0.15)] bg-[rgba(22,163,74,0.05)] p-3">
+          <div key={i} className="rounded-lg border border-[rgba(59,130,246,0.15)] bg-white/[0.02] p-3">
             <div className="flex items-center gap-2">
               <select value={a.type} onChange={(e) => setAction(i, { type: e.target.value })} className={inputCls}>
                 {ACTION_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>{t.label}</option>
                 ))}
               </select>
-              <button onClick={() => removeAction(i)} className="shrink-0 rounded-md p-1.5 text-[var(--color-error)] hover:bg-[rgba(22,163,74,0.06)]">
+              <button onClick={() => removeAction(i)} className="shrink-0 rounded-md p-1.5 text-[var(--color-error)] hover:bg-white/5">
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
@@ -289,7 +293,22 @@ function AutomationForm({
                 </select>
               )}
               {a.type === 'send_text' && (
-                <textarea value={String(a.text ?? '')} onChange={(e) => setAction(i, { text: e.target.value })} rows={2} placeholder="Mensagem de texto (sai pelo canal da conversa — Zernio ou UAZAPI; na API oficial exige janela de 24h aberta)" className={`${inputCls} sm:col-span-2 resize-none`} />
+                <div className="space-y-2 sm:col-span-2">
+                  {scripts.length > 0 && (
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        const s = scripts.find((sc) => sc.id === e.target.value);
+                        if (s) setAction(i, { text: s.content });
+                      }}
+                      className={inputCls}
+                    >
+                      <option value="">Carregar de um script…</option>
+                      {scripts.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
+                    </select>
+                  )}
+                  <textarea value={String(a.text ?? '')} onChange={(e) => setAction(i, { text: e.target.value })} rows={2} placeholder="Mensagem de texto (sai pelo canal da conversa — Zernio ou UAZAPI; na API oficial exige janela de 24h aberta)" className={`${inputCls} resize-none`} />
+                </div>
               )}
               {a.type === 'assign' && (
                 <select value={String(a.user_id ?? '')} onChange={(e) => setAction(i, { user_id: e.target.value })} className={inputCls}>
@@ -316,16 +335,16 @@ function AutomationForm({
             </div>
           </div>
         ))}
-        <button onClick={addAction} className="inline-flex items-center gap-1 rounded-lg border border-dashed border-[rgba(22,163,74,0.3)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] transition hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)]">
+        <button onClick={addAction} className="inline-flex items-center gap-1 rounded-lg border border-dashed border-[rgba(59,130,246,0.3)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] transition hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)]">
           <Plus className="h-3 w-3" /> Adicionar ação
         </button>
       </div>
 
       <div className="flex justify-end gap-2">
-        <button onClick={onCancel} className="rounded-lg border border-[rgba(22,163,74,0.2)] px-4 py-2 text-sm text-[var(--color-text-secondary)]">
+        <button onClick={onCancel} className="rounded-lg border border-[rgba(59,130,246,0.2)] px-4 py-2 text-sm text-[var(--color-text-secondary)]">
           Cancelar
         </button>
-        <button onClick={() => void save()} disabled={saving} className="rounded-lg bg-gradient-to-br from-[#14532D] to-[#16A34A] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+        <button onClick={() => void save()} disabled={saving} className="rounded-lg bg-gradient-to-br from-[#1E3A8A] to-[#3B82F6] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
           {saving ? 'Salvando…' : 'Salvar automação'}
         </button>
       </div>

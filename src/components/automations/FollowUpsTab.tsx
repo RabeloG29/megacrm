@@ -12,6 +12,7 @@ import { AlertTriangle, Plus, Timer, Trash2 } from 'lucide-react';
 import { getSupabase } from '@/lib/supabase';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useFollowUpRules } from '@/hooks/useFollowUpRules';
+import { useScripts } from '@/hooks/useScripts';
 import { useTags } from '@/hooks/useTags';
 import { useTemplates } from '@/hooks/useTemplates';
 import type { FollowUpRule, FollowUpTrigger } from '@/types/campaigns';
@@ -23,7 +24,7 @@ const TRIGGER_LABEL: Record<FollowUpTrigger, string> = {
 };
 
 const inputCls =
-  'w-full rounded-lg border border-[rgba(22,163,74,0.2)] bg-[rgba(22,163,74,0.06)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--accent-primary)]';
+  'w-full rounded-lg border border-[rgba(59,130,246,0.2)] bg-white/[0.03] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--accent-primary)]';
 const labelCls = 'mb-1 block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]';
 
 export function FollowUpsTab() {
@@ -74,7 +75,7 @@ export function FollowUpsTab() {
         </p>
         <button
           onClick={() => setCreating(true)}
-          className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-gradient-to-br from-[#14532D] to-[#16A34A] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+          className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-gradient-to-br from-[#1E3A8A] to-[#3B82F6] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
         >
           <Plus className="h-4 w-4" /> Nova regra
         </button>
@@ -117,7 +118,7 @@ export function FollowUpsTab() {
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${r.provider === 'uazapi' ? 'bg-[rgba(45,212,191,0.14)] text-[#2DD4BF]' : 'bg-[rgba(37,211,102,0.14)] text-[#25D366]'}`}>
                       {r.provider === 'uazapi' ? 'UAZAPI (não oficial)' : 'API Oficial'}
                     </span>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${r.is_active ? 'bg-[rgba(16,185,129,0.12)] text-[#10B981]' : 'bg-[rgba(22,163,74,0.06)] text-[var(--color-text-secondary)]'}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${r.is_active ? 'bg-[rgba(16,185,129,0.12)] text-[#10B981]' : 'bg-white/5 text-[var(--color-text-secondary)]'}`}>
                       {r.is_active ? 'Ativa' : 'Inativa'}
                     </span>
                   </div>
@@ -133,13 +134,13 @@ export function FollowUpsTab() {
                     onClick={() => void update(r.id, { is_active: !r.is_active }).catch((e) => toast.error(e.message))}
                     role="switch"
                     aria-checked={r.is_active}
-                    className={`relative h-6 w-11 rounded-full transition-colors ${r.is_active ? 'bg-[var(--accent-primary)]' : 'bg-[rgba(22,163,74,0.12)]'}`}
+                    className={`relative h-6 w-11 rounded-full transition-colors ${r.is_active ? 'bg-[var(--accent-primary)]' : 'bg-white/10'}`}
                   >
                     <span className={`absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${r.is_active ? 'translate-x-5' : 'translate-x-0.5'}`} />
                   </button>
                   <button
                     onClick={() => { if (confirm('Excluir esta regra?')) void remove(r.id).catch((e) => toast.error(e.message)); }}
-                    className="rounded-md p-1.5 text-[var(--color-error)] transition hover:bg-[rgba(22,163,74,0.06)]"
+                    className="rounded-md p-1.5 text-[var(--color-error)] transition hover:bg-white/5"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -177,6 +178,7 @@ function RuleForm({
   const [leadType, setLeadType] = useState('');
   const [tagId, setTagId] = useState('');
   const [saving, setSaving] = useState(false);
+  const { scripts } = useScripts();
 
   // no_reply é reengajamento de broadcast — só existe na API oficial.
   const effectiveProvider = trigger === 'no_reply' ? 'zernio' : provider;
@@ -254,12 +256,12 @@ function RuleForm({
       <div>
         <span className={labelCls}>Canal de envio</span>
         <div className="flex flex-wrap gap-2">
-          <label className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm ${effectiveProvider === 'zernio' ? 'border-[#16A34A] bg-[rgba(22,163,74,0.08)]' : 'border-[rgba(22,163,74,0.2)]'}`}>
+          <label className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm ${effectiveProvider === 'zernio' ? 'border-[#3B82F6] bg-[rgba(59,130,246,0.08)]' : 'border-[rgba(59,130,246,0.2)]'}`}>
             <input type="radio" checked={effectiveProvider === 'zernio'} onChange={() => setProvider('zernio')} className="accent-[var(--accent-primary)]" />
             API Oficial (Meta) — template aprovado
           </label>
           <label
-            className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${!uazapiOk || trigger === 'no_reply' ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} ${effectiveProvider === 'uazapi' ? 'border-[#2DD4BF] bg-[rgba(45,212,191,0.08)]' : 'border-[rgba(22,163,74,0.2)]'}`}
+            className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${!uazapiOk || trigger === 'no_reply' ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} ${effectiveProvider === 'uazapi' ? 'border-[#2DD4BF] bg-[rgba(45,212,191,0.08)]' : 'border-[rgba(59,130,246,0.2)]'}`}
             title={!uazapiOk ? 'Conecte a UAZAPI em Configurações → Canais' : trigger === 'no_reply' ? 'Reengajamento de campanha usa a API oficial' : undefined}
           >
             <input
@@ -289,8 +291,21 @@ function RuleForm({
           </select>
         </div>
       ) : (
-        <div>
+        <div className="space-y-2">
           <span className={labelCls}>Mensagem do follow-up</span>
+          {scripts.length > 0 && (
+            <select
+              value=""
+              onChange={(e) => {
+                const s = scripts.find((sc) => sc.id === e.target.value);
+                if (s) setMessageText(s.content);
+              }}
+              className={inputCls}
+            >
+              <option value="">Carregar de um script…</option>
+              {scripts.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
+            </select>
+          )}
           <textarea value={messageText} onChange={(e) => setMessageText(e.target.value)} rows={3} placeholder="Texto enviado pelo número UAZAPI…" className={`${inputCls} resize-none`} />
         </div>
       )}
@@ -318,10 +333,10 @@ function RuleForm({
       </div>
 
       <div className="flex justify-end gap-2">
-        <button onClick={onCancel} className="rounded-lg border border-[rgba(22,163,74,0.2)] px-4 py-2 text-sm text-[var(--color-text-secondary)]">
+        <button onClick={onCancel} className="rounded-lg border border-[rgba(59,130,246,0.2)] px-4 py-2 text-sm text-[var(--color-text-secondary)]">
           Cancelar
         </button>
-        <button onClick={() => void save()} disabled={saving} className="rounded-lg bg-gradient-to-br from-[#14532D] to-[#16A34A] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+        <button onClick={() => void save()} disabled={saving} className="rounded-lg bg-gradient-to-br from-[#1E3A8A] to-[#3B82F6] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
           {saving ? 'Salvando…' : 'Criar regra'}
         </button>
       </div>
