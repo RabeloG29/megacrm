@@ -373,17 +373,18 @@ export function MessageInput({ conversationId, disabled, withinWindow = true, on
                     <div className="space-y-0.5">
                       {scripts.map((s) => (
                         <button
-                          key={s.id}
-                          type="button"
-                          onClick={() => {
-                            const rendered = renderScriptContent(s.content, contact); setContent((prev) => (prev.trim() ? `${prev}\n${rendered}` : rendered));
-                            setShowScripts(false);
-                          }}
-                          className="block w-full rounded-md px-2 py-1.5 text-left text-sm text-[var(--color-text-primary)] hover:bg-white/5"
-                        >
-                          <div className="font-medium">{s.title}</div>
-                          <div className="truncate text-xs text-[var(--color-text-secondary)]">{renderScriptContent(s.content, contact)}</div>
-                        </button>
+                    key={s.id}
+                    type="button"
+                    onClick={() => void handleScriptSelect(s)}
+                    disabled={sending}
+                    className="block w-full rounded-md px-2 py-1.5 text-left text-sm text-[var(--color-text-primary)] hover:bg-white/5 disabled:opacity-50"
+                  >
+                    <div className="flex items-center gap-1.5 font-medium">
+                      {s.title}
+                      {(s.image_url || s.pdf_url) && <Paperclip className="h-3 w-3 text-[var(--color-text-secondary)]" />}
+                    </div>
+                    <div className="truncate text-xs text-[var(--color-text-secondary)]">{renderScriptContent(s.content, contact)}</div>
+                  </button>
                       ))}
                     </div>
                   )}
