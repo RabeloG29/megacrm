@@ -79,6 +79,10 @@ export interface Script {
   id: string;
   title: string;
   content: string;
+  image_url: string | null;
+  image_path: string | null;
+  pdf_url: string | null;
+  pdf_path: string | null;
 }
 
 // Produto associado a um deal, com valor/quantidade da compra (linha de
