@@ -28,7 +28,10 @@ interface UseCampaignsResult {
   previewAudience: (filter: AudienceFilter) => Promise<number>;
 }
 
-async function resolveAudienceIds(filter: AudienceFilter): Promise<string[]> {
+// Exportado para reuso pelo useUazapiBlast (audiência via tags/funil do
+// disparo direto usa a mesma regra de segurança: filtro vazio/ambíguo nunca
+// vira "todo mundo", só {all: true} explícito resolve a base inteira).
+export async function resolveAudienceIds(filter: AudienceFilter): Promise<string[]> {
   const supabase = getSupabase();
 
   const hasTags = Array.isArray(filter.tag_ids) && filter.tag_ids.length > 0;
@@ -253,7 +256,7 @@ export function useCampaigns(): UseCampaignsResult {
 }
 
 // Maps the most common Postgres/PostgREST errors to actionable pt-BR messages.
-function translateDbError(message: string): string {
+export function translateDbError(message: string): string {
   const lower = message.toLowerCase();
   if (lower.includes('duplicate key')) return 'Registro duplicado — verifique os dados informados.';
   if (lower.includes('row-level security') || lower.includes('permission denied')) return 'Você não tem permissão para esta ação.';

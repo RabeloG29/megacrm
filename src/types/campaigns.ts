@@ -4,6 +4,20 @@ export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'completed' | '
 export type CampaignContactStatus = 'pending' | 'sent' | 'delivered' | 'read' | 'replied' | 'failed';
 export type FollowUpTrigger = 'no_reply' | 'inactivity' | 'no_purchase';
 
+// 'broadcast' (default) = template aprovado via Zernio/Meta (fluxo existente).
+// 'uazapi_direct' = texto livre em massa pela UAZAPI, com pace_seconds entre
+// envios (ver migration 20260903140000_uazapi_direct_blast).
+export type CampaignKind = 'broadcast' | 'uazapi_direct';
+
+// Velocidade de disparo do caminho uazapi_direct — intervalo mínimo (segundos)
+// entre uma mensagem e a próxima. 'lento' é sempre o default recomendado.
+export type UazapiSendSpeed = 'lento' | 'moderado' | 'rapido';
+export const UAZAPI_SEND_SPEED_SECONDS: Record<UazapiSendSpeed, number> = {
+  lento: 45,
+  moderado: 30,
+  rapido: 10,
+};
+
 // Mirrors the JSONB shape the dispatcher consumes. `fallback` é usado quando o
 // contato não tem o campo preenchido (ex.: sem nome → "Cliente"); sem fallback,
 // a linha falha em vez de enviar a variável vazia.
@@ -32,13 +46,30 @@ export interface AudienceFilter {
   stage_ids?: string[];
 }
 
+// Proveniência da audiência de uma campanha uazapi_direct — persistida na
+// mesma coluna JSONB `audience_filter` (sem CHECK de shape no banco). 'crm'
+// reaproveita o AudienceFilter normal (tags/funil); 'csv' marca que os
+// contact_ids já foram resolvidos no momento da criação (upsert do CSV) — não
+// há filtro para reexecutar, só o registro de quantos vieram do arquivo.
+export type UazapiAudienceSource =
+  | { mode: 'crm'; filter: AudienceFilter }
+  | { mode: 'csv'; total: number; file_name?: string };
+
 export interface Campaign {
   id: string;
   name: string;
-  template_id: string;
+  // NULL no caminho uazapi_direct (texto livre em message_body, sem template).
+  template_id: string | null;
   status: CampaignStatus;
   scheduled_at: string | null;
-  audience_filter: AudienceFilter;
+  kind: CampaignKind;
+  channel_id: string | null;
+  // Texto livre com variáveis nomeadas ({{nome}}, {{primeiro_nome}},
+  // {{telefone}}, {{campo_customizado}}) — só em kind='uazapi_direct'.
+  message_body: string | null;
+  // Intervalo mínimo (segundos) entre envios — só em kind='uazapi_direct'.
+  pace_seconds: number | null;
+  audience_filter: AudienceFilter | UazapiAudienceSource;
   variable_mapping: Record<string, VariableSource>;
   total_contacts: number;
   sent: number;

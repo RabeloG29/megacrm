@@ -1,19 +1,21 @@
 import { useSearchParams } from 'react-router-dom';
-import { BarChart3, FileText, Link2, Megaphone } from 'lucide-react';
+import { BarChart3, FileText, Link2, Megaphone, Zap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CampaignsList } from '@/components/campaigns/CampaignsList';
+import { UazapiBlastList } from '@/components/campaigns/UazapiBlastList';
 import { TemplatesList } from '@/components/campaigns/TemplatesList';
 import { DispatchMetrics } from '@/components/campaigns/DispatchMetrics';
 import { UtmBuilder } from '@/components/campaigns/UtmBuilder';
 import { UtmChannelMap } from '@/components/campaigns/UtmChannelMap';
 
-// Campanhas concentra as abas: lista de campanhas, templates (Módulo 1),
-// métricas de disparo (Módulo 2) e o gerador de UTMs (Módulo 4). A aba UTMs
-// reúne toda a configuração de parâmetros: gerador de URLs + mapa de canal
-// (antes em Configurações). A aba ativa é sincronizada com ?tab= para
-// redirects e links.
-type TabId = 'campanhas' | 'templates' | 'metricas' | 'utms';
+// Campanhas concentra as abas: lista de campanhas (broadcast Zernio/Meta),
+// disparo direto (texto livre em massa pela UAZAPI, com pausa entre envios),
+// templates (Módulo 1), métricas de disparo (Módulo 2) e o gerador de UTMs
+// (Módulo 4). A aba UTMs reúne toda a configuração de parâmetros: gerador de
+// URLs + mapa de canal (antes em Configurações). A aba ativa é sincronizada
+// com ?tab= para redirects e links.
+type TabId = 'campanhas' | 'disparo-direto' | 'templates' | 'metricas' | 'utms';
 
 interface TabDef {
   id: TabId;
@@ -24,6 +26,7 @@ interface TabDef {
 
 const TABS: TabDef[] = [
   { id: 'campanhas', label: 'Campanhas', icon: Megaphone, render: () => <CampaignsList /> },
+  { id: 'disparo-direto', label: 'Disparo direto', icon: Zap, render: () => <UazapiBlastList /> },
   { id: 'templates', label: 'Templates', icon: FileText, render: () => <TemplatesList /> },
   { id: 'metricas', label: 'Métricas', icon: BarChart3, render: () => <DispatchMetrics /> },
   {
@@ -40,7 +43,7 @@ const TABS: TabDef[] = [
 ];
 
 function isTabId(v: string | null): v is TabId {
-  return v === 'campanhas' || v === 'templates' || v === 'metricas' || v === 'utms';
+  return v === 'campanhas' || v === 'disparo-direto' || v === 'templates' || v === 'metricas' || v === 'utms';
 }
 
 export default function CampaignsPage() {
