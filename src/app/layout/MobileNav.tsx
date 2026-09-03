@@ -42,11 +42,11 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
         <div className="h-16 shrink-0 flex items-center justify-between px-4 border-b border-[rgba(22,163,74,0.1)]">
           <div className="flex items-center gap-2">
             <img
-              src="/agentise-mark.png"
-              alt="Agentise"
-              className="h-9 w-9 rounded-xl"
+              src="/thsantana-logo.png"
+              alt="CRM THSANTANA"
+              className="h-9 w-9 rounded-xl object-contain"
             />
-            <span className="font-semibold text-[var(--color-text-primary)]">TH CRM</span>
+            <span className="font-semibold text-[var(--color-text-primary)]">CRM THSANTANA</span>
           </div>
           <button
             onClick={onClose}
