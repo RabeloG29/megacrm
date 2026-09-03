@@ -75,3 +75,4 @@ setup.config.ts              Manifesto de credenciais da ferramenta
 ## Licenca
 
 MIT.
+
