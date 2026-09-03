@@ -293,6 +293,7 @@ export default function InboxPage() {
                   conversationId={selected.id}
                   withinWindow={effectiveWithinWindow}
                   onSendText={sendText}
+                  contact={selected.contact}
                 />
               )}
             </>
