@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 import { Loader2, MessageSquareText, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { useScripts } from '@/hooks/useScripts';
 import type { Script } from '@/types/crm';
 import { LoadErrorBanner } from '@/components/LoadErrorBanner';
+import { SCRIPT_VARIABLES } from '@/lib/scriptVariables';
 
 const textareaCls =
   'w-full resize-none rounded-lg border border-[rgba(59,130,246,0.2)] bg-white/[0.03] px-4 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--accent-primary)]';
@@ -21,11 +22,37 @@ export function ScriptsSettings() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
+  const contentRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editSaving, setEditSaving] = useState(false);
+  const editContentRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Insere {{variavel}} na posição do cursor (ou no final, se o campo não
+  // estiver focado) e atualiza o estado controlado do textarea.
+  const insertVariable = (
+    token: string,
+    ref: React.RefObject<HTMLTextAreaElement | null>,
+    value: string,
+    setValue: (v: string) => void,
+  ) => {
+    const el = ref.current;
+    if (!el) {
+      setValue(`${value}${token}`);
+      return;
+    }
+    const start = el.selectionStart ?? value.length;
+    const end = el.selectionEnd ?? value.length;
+    const next = value.slice(0, start) + token + value.slice(end);
+    setValue(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + token.length;
+      el.setSelectionRange(pos, pos);
+    });
+  };
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
@@ -100,6 +127,7 @@ export function ScriptsSettings() {
             <Label htmlFor="script_content">Mensagem *</Label>
             <textarea
               id="script_content"
+              ref={contentRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows={4}
@@ -107,6 +135,23 @@ export function ScriptsSettings() {
               disabled={saving}
               className={textareaCls}
             />
+            <div className="flex flex-wrap gap-1.5">
+              {SCRIPT_VARIABLES.map((v) => (
+                <button
+                  key={v.token}
+                  type="button"
+                  onClick={() => insertVariable(v.token, contentRef, content, setContent)}
+                  title={v.label}
+                  className="rounded-full border border-[rgba(59,130,246,0.25)] bg-white/[0.03] px-2.5 py-1 text-[11px] font-medium text-[var(--accent-primary)] hover:bg-[rgba(59,130,246,0.1)]"
+                >
+                  {v.token}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-[var(--color-text-secondary)]">
+              Clique numa variável para inserir. Ela é preenchida automaticamente com o dado
+              do contato quando o script é usado no Inbox.
+            </p>
           </div>
 
           <div className="flex justify-end">
@@ -139,12 +184,26 @@ export function ScriptsSettings() {
                   >
                     <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} disabled={editSaving} />
                     <textarea
+                      ref={editContentRef}
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
                       rows={4}
                       disabled={editSaving}
                       className={textareaCls}
                     />
+                    <div className="flex flex-wrap gap-1.5">
+                      {SCRIPT_VARIABLES.map((v) => (
+                        <button
+                          key={v.token}
+                          type="button"
+                          onClick={() => insertVariable(v.token, editContentRef, editContent, setEditContent)}
+                          title={v.label}
+                          className="rounded-full border border-[rgba(59,130,246,0.25)] bg-white/[0.03] px-2.5 py-1 text-[11px] font-medium text-[var(--accent-primary)] hover:bg-[rgba(59,130,246,0.1)]"
+                        >
+                          {v.token}
+                        </button>
+                      ))}
+                    </div>
                     <div className="flex items-center gap-1 justify-end">
                       <Button size="sm" onClick={handleUpdate} disabled={editSaving || !editTitle.trim() || !editContent.trim()}>
                         {editSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Salvar'}
