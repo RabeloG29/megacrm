@@ -6,6 +6,7 @@ import { getSupabase } from '@/lib/supabase';
 import type { SendResult } from '@/hooks/useMessages';
 import { useScripts } from '@/hooks/useScripts';
 import { renderScriptContent, type ScriptContact } from '@/lib/scriptVariables';
+import type { Script } from '@/types/crm';
 import { TemplateRestartDialog } from './TemplateRestartDialog';
 
 interface MessageInputProps {
@@ -129,6 +130,66 @@ export function MessageInput({ conversationId, disabled, withinWindow = true, on
     setFile(null);
     setContent('');
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const filenameFromUrl = (url: string, fallback: string): string => {
+    try {
+      const path = new URL(url).pathname;
+      const base = path.split('/').pop();
+      return base && base.includes('.') ? base : fallback;
+    } catch {
+      return fallback;
+    }
+  };
+
+  // Reenvia um anexo de script (imagem/PDF ja hospedado no Storage) como midia
+  // da conversa, baixando os bytes e reaproveitando o mesmo endpoint do anexo
+  // manual (send-operator-media).
+  const sendAttachmentFromUrl = async (url: string, filename: string) => {
+    const supabase = getSupabase();
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Falha ao baixar anexo do script.');
+    const blob = await res.blob();
+    const attachedFile = new File([blob], filename, { type: blob.type || 'application/octet-stream' });
+    const form = new FormData();
+    form.append('conversation_id', conversationId);
+    form.append('file', attachedFile);
+    const { data, error } = await supabase.functions.invoke('send-operator-media', { body: form });
+    if (error || !data?.ok) {
+      throw new Error(data?.error ?? error?.message ?? 'Erro desconhecido');
+    }
+  };
+
+  // Script com imagem/PDF: envia o texto (se houver) como mensagem e depois
+  // cada anexo em sequencia. Sem anexo, comportamento antigo (insere no campo
+  // de texto).
+  const handleScriptSelect = async (s: Script) => {
+    const rendered = renderScriptContent(s.content, contact);
+    setShowScripts(false);
+
+    const attachments: { url: string; filename: string }[] = [];
+    if (s.image_url) attachments.push({ url: s.image_url, filename: filenameFromUrl(s.image_url, 'imagem.jpg') });
+    if (s.pdf_url) attachments.push({ url: s.pdf_url, filename: filenameFromUrl(s.pdf_url, 'documento.pdf') });
+
+    if (attachments.length === 0) {
+      setContent((prev) => (prev.trim() ? `${prev}\n${rendered}` : rendered));
+      return;
+    }
+
+    if (disabled || sending) return;
+    setSending(true);
+    try {
+      if (rendered.trim()) {
+        await onSendText(rendered, false);
+      }
+      for (const att of attachments) {
+        await sendAttachmentFromUrl(att.url, att.filename);
+      }
+    } catch (err) {
+      toast.error('Falha ao enviar script', { description: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setSending(false);
+    }
   };
 
   // Texto/nota: OTIMISTA. Limpa o input na hora, o balão aparece imediatamente
