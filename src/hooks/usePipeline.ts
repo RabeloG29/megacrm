@@ -25,6 +25,10 @@ interface CreateDealInput {
   contact_id: string;
   value?: number;
   stage_id: string;
+  // Produto escolhido no "+ Negócio" (dropdown do catálogo) — vincula via
+  // deal_products, igual ao "Adicionar produto" do DealDrawer.
+  product_id?: string;
+  product_name?: string;
 }
 
 interface UsePipelineResult {
@@ -274,6 +278,18 @@ export function usePipeline(): UsePipelineResult {
         return;
       }
       const deal = normalizeDeal(data as Record<string, unknown>);
+
+      // Vincula o produto escolhido no form (deal_products) — mesma tabela que
+      // o "Adicionar produto" do DealDrawer usa. Anexa localmente pra já
+      // aparecer no card sem precisar recarregar o funil.
+      if (input.product_id) {
+        const { error: linkErr } = await supabase
+          .from('deal_products')
+          .upsert({ deal_id: deal.id, product_id: input.product_id, value: input.value ?? null });
+        if (linkErr) setError(linkErr.message);
+        else deal.products = [{ id: input.product_id, name: input.product_name ?? deal.title }];
+      }
+
       setDeals((cur) => (cur.some((d) => d.id === deal.id) ? cur : [deal, ...cur]));
     },
     [selectedId, stages],

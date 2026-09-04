@@ -1,15 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Archive, ArchiveRestore, CheckSquare, ChevronDown, Clock, GitBranchPlus, ListChecks, Plus, RefreshCw, Settings2, Square, X } from 'lucide-react';
 import { getSupabase } from '@/lib/supabase';
 import { usePipeline } from '@/hooks/usePipeline';
 import { useAppUser } from '@/app/providers/AppUserProvider';
+import { useProducts } from '@/hooks/useProducts';
+import { useContacts } from '@/hooks/useContacts';
+import { useTags } from '@/hooks/useTags';
+import { normalizePhone } from '@/lib/phone';
 import { LoadErrorBanner } from '@/components/LoadErrorBanner';
 import { DealDrawer } from '@/components/funil/DealDrawer';
 import { FunilManager } from '@/components/funil/FunilManager';
 import { BulkActionBar } from '@/components/funil/BulkActionBar';
 import { applyFunilFilters, EMPTY_FILTERS, FunilFilters, sortFunilDeals, type FunilFilterState, type FunilSort } from '@/components/funil/FunilFilters';
-import { DUE_TONE_STYLE, dueTone, getDealOrigin, TEMPERATURE_STYLE, TRAFFIC_TYPE_STYLE, type ContactLite, type Deal, type Stage } from '@/types/crm';
+import { DUE_TONE_STYLE, dueTone, getDealOrigin, TEMPERATURE_STYLE, TRAFFIC_TYPE_STYLE, type ContactLite, type Deal, type Product, type Stage, type Tag } from '@/types/crm';
 
 const fmtDueShort = (s: string) =>
   new Date(s).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -31,6 +36,9 @@ export default function FunilPage() {
     bulkMoveStage, bulkMarkWon, bulkMarkLost, bulkArchive, bulkDelete, bulkMoveToPipeline,
   } = funil;
   const { role } = useAppUser();
+  const { products } = useProducts();
+  const { tags: tagCatalog } = useTags();
+  const { create: createContact } = useContacts();
 
   const [contacts, setContacts] = useState<ContactLite[]>([]);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -83,6 +91,36 @@ export default function FunilPage() {
       .limit(500)
       .then(({ data }) => setContacts((data ?? []) as ContactLite[]));
   }, []);
+
+  // "+ Novo lead" dentro do form de criar negócio: cadastra o contato na hora
+  // (nome + telefone obrigatórios) e já injeta no dropdown de contatos local.
+  const createLeadInline = async (input: {
+    name: string;
+    phone: string;
+    email?: string;
+    tagIds: string[];
+  }): Promise<ContactLite | null> => {
+    const normalized = normalizePhone(input.phone);
+    if (!normalized.ok) {
+      toast.error('Telefone inválido', { description: normalized.error });
+      return null;
+    }
+    try {
+      const created = await createContact({
+        phone: normalized.e164,
+        name: input.name.trim(),
+        email: input.email?.trim() || null,
+        tag_ids: input.tagIds,
+      });
+      if (!created) return null;
+      const lite: ContactLite = { id: created.id, name: created.name, phone: created.phone ?? normalized.e164 };
+      setContacts((cur) => [...cur, lite].sort((a, b) => (a.name ?? a.phone).localeCompare(b.name ?? b.phone)));
+      return lite;
+    } catch (err) {
+      toast.error('Falha ao criar lead', { description: err instanceof Error ? err.message : String(err) });
+      return null;
+    }
+  };
 
   // Troca de funil, filtro ou ordenação volta a paginação das etapas para 20
   // e limpa a seleção (evita ação em massa em cards que saíram da tela).
@@ -226,6 +264,9 @@ export default function FunilPage() {
                   {adding === stage.id ? (
                     <AddDealForm
                       contacts={contacts}
+                      products={products}
+                      tags={tagCatalog}
+                      onCreateLead={createLeadInline}
                       onCancel={() => setAdding(null)}
                       onSubmit={async (input) => {
                         await createDeal({ ...input, stage_id: stage.id });
@@ -562,44 +603,159 @@ function DealCard({
   );
 }
 
+const NEW_LEAD_OPTION = '__new_lead__';
+
 function AddDealForm({
   contacts,
+  products,
+  tags,
+  onCreateLead,
   onSubmit,
   onCancel,
 }: {
   contacts: ContactLite[];
-  onSubmit: (input: { title: string; contact_id: string; value?: number }) => Promise<void>;
+  products: Product[];
+  tags: Tag[];
+  onCreateLead: (input: { name: string; phone: string; email?: string; tagIds: string[] }) => Promise<ContactLite | null>;
+  onSubmit: (input: { title: string; contact_id: string; value?: number; product_id?: string; product_name?: string }) => Promise<void>;
   onCancel: () => void;
 }) {
-  const [title, setTitle] = useState('');
   const [contactId, setContactId] = useState('');
+  const [creatingLead, setCreatingLead] = useState(false);
+  const [leadName, setLeadName] = useState('');
+  const [leadPhone, setLeadPhone] = useState('');
+  const [leadEmail, setLeadEmail] = useState('');
+  const [leadTagIds, setLeadTagIds] = useState<Set<string>>(new Set());
+  const [productId, setProductId] = useState('');
   const [value, setValue] = useState('');
   const [busy, setBusy] = useState(false);
 
   const inputCls =
     'w-full rounded-md border border-[rgba(22,163,74,0.2)] bg-[rgba(22,163,74,0.06)] px-2 py-1 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--accent-primary)]';
 
+  const toggleLeadTag = (id: string) => {
+    setLeadTagIds((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const canSubmit = creatingLead
+    ? leadName.trim() && leadPhone.trim() && productId
+    : contactId && productId;
+
   return (
     <form
       onSubmit={async (e) => {
         e.preventDefault();
-        if (!title.trim() || !contactId) return;
+        if (!canSubmit) return;
         setBusy(true);
-        await onSubmit({ title: title.trim(), contact_id: contactId, value: Number(value) || 0 });
-        setBusy(false);
+        try {
+          let finalContactId = contactId;
+          if (creatingLead) {
+            const created = await onCreateLead({
+              name: leadName,
+              phone: leadPhone,
+              email: leadEmail,
+              tagIds: Array.from(leadTagIds),
+            });
+            if (!created) {
+              setBusy(false);
+              return;
+            }
+            finalContactId = created.id;
+          }
+          const product = products.find((p) => p.id === productId);
+          await onSubmit({
+            title: product?.name ?? '',
+            contact_id: finalContactId,
+            value: Number(value) || 0,
+            product_id: productId || undefined,
+            product_name: product?.name,
+          });
+        } finally {
+          setBusy(false);
+        }
       }}
       className="space-y-2 rounded-lg border border-[rgba(22,163,74,0.2)] bg-[rgba(22,163,74,0.06)] p-2"
     >
-      <select value={contactId} onChange={(e) => setContactId(e.target.value)} className={inputCls}>
-        <option value="">Contato (lead)…</option>
-        {contacts.map((c) => (
-          <option key={c.id} value={c.id}>{c.name ?? c.phone}</option>
+      {creatingLead ? (
+        <div className="space-y-1.5 rounded-md border border-dashed border-[rgba(22,163,74,0.3)] p-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">Novo lead</span>
+            <button
+              type="button"
+              onClick={() => { setCreatingLead(false); setLeadName(''); setLeadPhone(''); setLeadEmail(''); setLeadTagIds(new Set()); }}
+              className="text-[10px] text-[var(--color-text-secondary)] underline"
+            >
+              usar contato existente
+            </button>
+          </div>
+          <input autoFocus value={leadName} onChange={(e) => setLeadName(e.target.value)} placeholder="Nome*" className={inputCls} />
+          <input value={leadPhone} onChange={(e) => setLeadPhone(e.target.value)} placeholder="Telefone*" className={inputCls} />
+          <input value={leadEmail} onChange={(e) => setLeadEmail(e.target.value)} type="email" placeholder="E-mail (opcional)" className={inputCls} />
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 pt-0.5">
+              {tags.map((t) => {
+                const active = leadTagIds.has(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => toggleLeadTag(t.id)}
+                    className="rounded-full px-2 py-0.5 text-[10px] font-semibold transition"
+                    style={
+                      active
+                        ? { backgroundColor: t.color, color: '#fff' }
+                        : { backgroundColor: `${t.color}22`, color: t.color }
+                    }
+                  >
+                    {t.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        <select
+          value={contactId}
+          onChange={(e) => {
+            if (e.target.value === NEW_LEAD_OPTION) {
+              setCreatingLead(true);
+              setContactId('');
+            } else {
+              setContactId(e.target.value);
+            }
+          }}
+          className={inputCls}
+        >
+          <option value="">Contato (lead)…</option>
+          <option value={NEW_LEAD_OPTION}>+ Novo lead</option>
+          {contacts.map((c) => (
+            <option key={c.id} value={c.id}>{c.name ?? c.phone}</option>
+          ))}
+        </select>
+      )}
+
+      <select
+        value={productId}
+        onChange={(e) => {
+          setProductId(e.target.value);
+          const product = products.find((p) => p.id === e.target.value);
+          if (product?.price && !value) setValue(String(product.price));
+        }}
+        className={inputCls}
+      >
+        <option value="">Produto…</option>
+        {products.map((p) => (
+          <option key={p.id} value={p.id}>{p.name}</option>
         ))}
       </select>
-      <input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título do negócio" className={inputCls} />
       <input value={value} onChange={(e) => setValue(e.target.value)} type="number" step="0.01" placeholder="Valor (R$)" className={inputCls} />
       <div className="flex gap-2">
-        <button type="submit" disabled={busy} className="flex-1 rounded-md bg-[var(--accent-primary)] px-2 py-1 text-xs font-semibold text-white disabled:opacity-60">
+        <button type="submit" disabled={busy || !canSubmit} className="flex-1 rounded-md bg-[var(--accent-primary)] px-2 py-1 text-xs font-semibold text-white disabled:opacity-60">
           {busy ? 'Salvando…' : 'Salvar'}
         </button>
         <button type="button" onClick={onCancel} className="rounded-md border border-[rgba(22,163,74,0.2)] px-2 py-1 text-xs text-[var(--color-text-secondary)]">
