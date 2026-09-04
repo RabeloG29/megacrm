@@ -45,6 +45,13 @@ interface UsePipelineResult {
   createDeal: (input: CreateDealInput) => Promise<void>;
   archiveDeal: (dealId: string) => Promise<void>;
   unarchiveDeal: (dealId: string) => Promise<void>;
+  // Ações em massa (seleção múltipla no board do funil).
+  bulkMoveStage: (dealIds: string[], stageId: string) => Promise<void>;
+  bulkMarkWon: (dealIds: string[]) => Promise<void>;
+  bulkMarkLost: (dealIds: string[], reason: string | null) => Promise<void>;
+  bulkArchive: (dealIds: string[]) => Promise<void>;
+  bulkDelete: (dealIds: string[]) => Promise<{ ok: boolean; error?: string }>;
+  bulkMoveToPipeline: (dealIds: string[], pipelineId: string, stageId: string) => Promise<{ ok: boolean; error?: string }>;
   // Gestão de funis
   createPipeline: (name: string) => Promise<Pipeline | null>;
   renamePipeline: (id: string, name: string) => Promise<void>;
@@ -288,6 +295,131 @@ export function usePipeline(): UsePipelineResult {
     if (err) setError(err.message);
   }, []);
 
+  // ---- Ações em massa (seleção múltipla no board do funil) ------------------
+  // Move N deals para uma etapa de uma vez (drag-and-drop em lote). Mesma
+  // regra de negócio do moveDeal individual: etapa de ganho/perda ajusta
+  // status/temperatura/lead_type; registra o histórico de movimentação.
+  const bulkMoveStage = useCallback(async (dealIds: string[], stageId: string) => {
+    if (dealIds.length === 0) return;
+    const stage = stages.find((s) => s.id === stageId);
+    const patch: Partial<Deal> = { stage_id: stageId };
+    if (stage?.is_won) {
+      patch.status = 'won';
+      patch.temperature = 'Morno';
+    } else if (stage?.is_lost) {
+      patch.status = 'lost';
+      patch.temperature = 'Frio';
+      patch.lead_type = 'Lead';
+    } else {
+      patch.status = 'open';
+    }
+    const prevStageById = new Map(deals.map((d) => [d.id, d.stage_id]));
+    setDeals((cur) => cur.map((d) => (dealIds.includes(d.id) ? { ...d, ...patch } : d)));
+    const supabase = getSupabase();
+    const { error: err } = await supabase.from('deals').update(patch).in('id', dealIds);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    const { data: u } = await supabase.auth.getUser();
+    const rows = dealIds
+      .filter((id) => (prevStageById.get(id) ?? null) !== stageId)
+      .map((id) => ({
+        deal_id: id,
+        from_stage_id: prevStageById.get(id) ?? null,
+        to_stage_id: stageId,
+        moved_by: 'humano',
+        actor_id: u?.user?.id ?? null,
+      }));
+    if (rows.length > 0) await supabase.from('lead_stage_history').insert(rows);
+  }, [stages, deals]);
+
+  // Ganho em massa: move para a etapa "Ganho" do funil atual, se existir
+  // (won_at é preenchido por trigger no UPDATE de status).
+  const bulkMarkWon = useCallback(async (dealIds: string[]) => {
+    if (dealIds.length === 0) return;
+    const wonStage = stages.find((s) => s.is_won);
+    if (wonStage) {
+      await bulkMoveStage(dealIds, wonStage.id);
+      return;
+    }
+    setDeals((cur) => cur.map((d) => (dealIds.includes(d.id) ? { ...d, status: 'won', temperature: 'Morno' } : d)));
+    const supabase = getSupabase();
+    const { error: err } = await supabase.from('deals').update({ status: 'won', temperature: 'Morno' }).in('id', dealIds);
+    if (err) setError(err.message);
+  }, [stages, bulkMoveStage]);
+
+  // Perdido em massa: grava o motivo (catálogo de Configurações → Motivos de
+  // perda, ou texto livre) e move para a etapa "Perdido", se existir.
+  const bulkMarkLost = useCallback(async (dealIds: string[], reason: string | null) => {
+    if (dealIds.length === 0) return;
+    const lostStage = stages.find((s) => s.is_lost);
+    const patch: Partial<Deal> = { status: 'lost', lost_reason: reason, temperature: 'Frio', lead_type: 'Lead' };
+    if (lostStage) patch.stage_id = lostStage.id;
+    const prevStageById = new Map(deals.map((d) => [d.id, d.stage_id]));
+    setDeals((cur) => cur.map((d) => (dealIds.includes(d.id) ? { ...d, ...patch } : d)));
+    const supabase = getSupabase();
+    const { error: err } = await supabase.from('deals').update(patch).in('id', dealIds);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    if (lostStage) {
+      const { data: u } = await supabase.auth.getUser();
+      const rows = dealIds
+        .filter((id) => (prevStageById.get(id) ?? null) !== lostStage.id)
+        .map((id) => ({
+          deal_id: id,
+          from_stage_id: prevStageById.get(id) ?? null,
+          to_stage_id: lostStage.id,
+          moved_by: 'humano',
+          actor_id: u?.user?.id ?? null,
+        }));
+      if (rows.length > 0) await supabase.from('lead_stage_history').insert(rows);
+    }
+  }, [stages, deals]);
+
+  const bulkArchive = useCallback(async (dealIds: string[]) => {
+    if (dealIds.length === 0) return;
+    const ts = new Date().toISOString();
+    setDeals((cur) => cur.map((d) => (dealIds.includes(d.id) ? { ...d, archived_at: ts } : d)));
+    const supabase = getSupabase();
+    const { error: err } = await supabase.from('deals').update({ archived_at: ts }).in('id', dealIds);
+    if (err) setError(err.message);
+  }, []);
+
+  // Exclusão definitiva (não é arquivar) — os relacionamentos (produtos, tags,
+  // notas, campos custom, histórico) têm ON DELETE CASCADE nas migrations.
+  const bulkDelete = useCallback<UsePipelineResult['bulkDelete']>(async (dealIds) => {
+    if (dealIds.length === 0) return { ok: true };
+    const supabase = getSupabase();
+    const { error: err } = await supabase.from('deals').delete().in('id', dealIds);
+    if (err) return { ok: false, error: err.message };
+    setDeals((cur) => cur.filter((d) => !dealIds.includes(d.id)));
+    return { ok: true };
+  }, []);
+
+  // Move para outro funil (+ etapa escolhida nele) — sai do board atual.
+  const bulkMoveToPipeline = useCallback<UsePipelineResult['bulkMoveToPipeline']>(
+    async (dealIds, pipelineId, stageId) => {
+      if (dealIds.length === 0) return { ok: true };
+      const supabase = getSupabase();
+      const { data: stRow, error: stErr } = await supabase.from('stages').select('*').eq('id', stageId).single();
+      if (stErr) return { ok: false, error: stErr.message };
+      const stage = stRow as Stage;
+      const patch: Partial<Deal> = {
+        pipeline_id: pipelineId,
+        stage_id: stageId,
+        status: stage.is_won ? 'won' : stage.is_lost ? 'lost' : 'open',
+      };
+      const { error: err } = await supabase.from('deals').update(patch).in('id', dealIds);
+      if (err) return { ok: false, error: err.message };
+      setDeals((cur) => cur.filter((d) => !dealIds.includes(d.id)));
+      return { ok: true };
+    },
+    [],
+  );
+
   // ---- Gestão de funis ------------------------------------------------------
   const createPipeline = useCallback<UsePipelineResult['createPipeline']>(async (name) => {
     const supabase = getSupabase();
@@ -423,6 +555,7 @@ export function usePipeline(): UsePipelineResult {
   return {
     pipelines, selectedId, select, pipeline, stages, deals, nextActionByDeal, convByContact, loading, error, reload,
     moveDeal, createDeal, archiveDeal, unarchiveDeal,
+    bulkMoveStage, bulkMarkWon, bulkMarkLost, bulkArchive, bulkDelete, bulkMoveToPipeline,
     createPipeline, renamePipeline, deletePipeline, setDefaultPipeline,
     addStage, renameStage, setStageColor, setStageProbability, setStageAiCriteria, reorderStages, removeStage,
   };

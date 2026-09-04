@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Archive, ArchiveRestore, ChevronDown, Clock, GitBranchPlus, Plus, RefreshCw, Settings2, X } from 'lucide-react';
+import { Archive, ArchiveRestore, CheckSquare, ChevronDown, Clock, GitBranchPlus, ListChecks, Plus, RefreshCw, Settings2, Square, X } from 'lucide-react';
 import { getSupabase } from '@/lib/supabase';
 import { usePipeline } from '@/hooks/usePipeline';
 import { useAppUser } from '@/app/providers/AppUserProvider';
 import { LoadErrorBanner } from '@/components/LoadErrorBanner';
 import { DealDrawer } from '@/components/funil/DealDrawer';
 import { FunilManager } from '@/components/funil/FunilManager';
+import { BulkActionBar } from '@/components/funil/BulkActionBar';
 import { applyFunilFilters, EMPTY_FILTERS, FunilFilters, sortFunilDeals, type FunilFilterState, type FunilSort } from '@/components/funil/FunilFilters';
 import { DUE_TONE_STYLE, dueTone, getDealOrigin, TEMPERATURE_STYLE, TRAFFIC_TYPE_STYLE, type ContactLite, type Deal, type Stage } from '@/types/crm';
 
@@ -27,6 +28,7 @@ export default function FunilPage() {
   const {
     pipelines, selectedId, select, pipeline, stages, deals, nextActionByDeal, convByContact,
     loading, error, reload, moveDeal, createDeal, archiveDeal, unarchiveDeal,
+    bulkMoveStage, bulkMarkWon, bulkMarkLost, bulkArchive, bulkDelete, bulkMoveToPipeline,
   } = funil;
   const { role } = useAppUser();
 
@@ -40,6 +42,24 @@ export default function FunilPage() {
   const [filters, setFilters] = useState<FunilFilterState>(EMPTY_FILTERS);
   const [sort, setSort] = useState<FunilSort>('recente');
   const [visibleByStage, setVisibleByStage] = useState<Record<string, number>>({});
+  // Seleção múltipla (ações em massa): ids de negócios marcados no board.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const selectMany = (ids: string[], on: boolean) => {
+    setSelectedIds((cur) => {
+      const next = new Set(cur);
+      ids.forEach((id) => { if (on) next.add(id); else next.delete(id); });
+      return next;
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
 
   const openDeal = useMemo(() => deals.find((d) => d.id === openDealId) ?? null, [deals, openDealId]);
 
@@ -64,9 +84,11 @@ export default function FunilPage() {
       .then(({ data }) => setContacts((data ?? []) as ContactLite[]));
   }, []);
 
-  // Troca de funil, filtro ou ordenação volta a paginação das etapas para 20.
+  // Troca de funil, filtro ou ordenação volta a paginação das etapas para 20
+  // e limpa a seleção (evita ação em massa em cards que saíram da tela).
   useEffect(() => {
     setVisibleByStage({});
+    setSelectedIds(new Set());
   }, [selectedId, filters, sort]);
 
   const archivedDeals = useMemo(() => deals.filter((d) => d.archived_at), [deals]);
@@ -190,7 +212,12 @@ export default function FunilPage() {
                     {stage.color && <span className="h-2.5 w-2.5 rounded-full" style={{ background: stage.color }} />}
                     {stage.name}
                   </span>
-                  <span className="text-xs text-[var(--color-text-secondary)]">{list.length}</span>
+                  <StageSelectMenu
+                    count={list.length}
+                    selectedCount={list.filter((d) => selectedIds.has(d.id)).length}
+                    onSelect={(n) => selectMany(list.slice(0, n).map((d) => d.id), true)}
+                    onClear={() => selectMany(list.map((d) => d.id), false)}
+                  />
                 </div>
                 <div className="px-3 pt-1 text-xs text-[var(--color-text-secondary)]">{brl(total)}</div>
 
@@ -219,6 +246,8 @@ export default function FunilPage() {
                       key={deal.id}
                       deal={deal}
                       nextDue={nextActionByDeal[deal.id] ?? null}
+                      selected={selectedIds.has(deal.id)}
+                      onToggleSelect={() => toggleSelect(deal.id)}
                       onDragStart={() => setDragId(deal.id)}
                       onOpen={() => setOpenDealId(deal.id)}
                       onArchive={() => void archiveDeal(deal.id)}
@@ -266,6 +295,97 @@ export default function FunilPage() {
           onRestore={(id) => void unarchiveDeal(id)}
           onOpen={(id) => { setArchivedOpen(false); setOpenDealId(id); }}
         />
+      )}
+
+      <BulkActionBar
+        count={selectedIds.size}
+        stages={stages}
+        pipelines={pipelines}
+        currentPipelineId={selectedId}
+        onClear={clearSelection}
+        onMoveStage={async (stageId) => { await bulkMoveStage([...selectedIds], stageId); clearSelection(); }}
+        onMarkWon={async () => { await bulkMarkWon([...selectedIds]); clearSelection(); }}
+        onMarkLost={async (reason) => { await bulkMarkLost([...selectedIds], reason); clearSelection(); }}
+        onArchive={async () => { await bulkArchive([...selectedIds]); clearSelection(); }}
+        onDelete={async () => { const res = await bulkDelete([...selectedIds]); clearSelection(); return res; }}
+        onMoveToPipeline={async (pipelineId, stageId) => {
+          const res = await bulkMoveToPipeline([...selectedIds], pipelineId, stageId);
+          clearSelection();
+          return res;
+        }}
+      />
+    </div>
+  );
+}
+
+// Popover no cabeçalho da etapa: "selecionar todos" ou um número específico
+// dos primeiros N cards (mesma lógica do exemplo de referência do usuário).
+function StageSelectMenu({
+  count,
+  selectedCount,
+  onSelect,
+  onClear,
+}: {
+  count: number;
+  selectedCount: number;
+  onSelect: (n: number) => void;
+  onClear: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [n, setN] = useState('');
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs transition ${
+          selectedCount > 0
+            ? 'bg-[rgba(22,163,74,0.15)] text-[var(--accent-secondary)] font-semibold'
+            : 'text-[var(--color-text-secondary)] hover:bg-[rgba(22,163,74,0.08)]'
+        }`}
+        title="Selecionar negócios desta etapa"
+      >
+        {selectedCount > 0 ? `${selectedCount}/${count}` : count}
+        <ListChecks className="h-3 w-3 opacity-70" />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 z-40 mt-1 w-48 rounded-lg border border-[rgba(22,163,74,0.25)] bg-[#F3FBF6] p-2 shadow-[0_0_30px_rgba(22,163,74,0.15)]">
+            <button
+              onClick={() => { onSelect(count); setOpen(false); }}
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-[var(--color-text-primary)] transition hover:bg-[rgba(22,163,74,0.08)]"
+            >
+              <CheckSquare className="h-3.5 w-3.5" /> Selecionar todos ({count})
+            </button>
+            <div className="mt-1 flex items-center gap-1 px-2 py-1">
+              <span className="text-xs text-[var(--color-text-secondary)]">Selecionar</span>
+              <input
+                type="number"
+                min={1}
+                max={count}
+                value={n}
+                onChange={(e) => setN(e.target.value)}
+                placeholder="N"
+                className="w-14 rounded-md border border-[rgba(22,163,74,0.2)] bg-[rgba(22,163,74,0.06)] px-1.5 py-0.5 text-xs text-[var(--color-text-primary)] outline-none focus:border-[var(--accent-primary)]"
+              />
+              <button
+                onClick={() => { const v = Math.max(0, Math.min(count, Number(n) || 0)); if (v > 0) onSelect(v); setOpen(false); setN(''); }}
+                className="rounded-md border border-[rgba(22,163,74,0.2)] px-1.5 py-0.5 text-xs text-[var(--accent-secondary)] transition hover:border-[var(--accent-primary)]"
+              >
+                Ir
+              </button>
+            </div>
+            {selectedCount > 0 && (
+              <button
+                onClick={() => { onClear(); setOpen(false); }}
+                className="mt-1 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-[var(--color-text-secondary)] transition hover:bg-[rgba(22,163,74,0.08)]"
+              >
+                <Square className="h-3.5 w-3.5" /> Limpar seleção
+              </button>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
@@ -331,12 +451,16 @@ function ArchivedPanel({
 function DealCard({
   deal,
   nextDue,
+  selected,
+  onToggleSelect,
   onDragStart,
   onOpen,
   onArchive,
 }: {
   deal: Deal;
   nextDue: string | null;
+  selected: boolean;
+  onToggleSelect: () => void;
   onDragStart: () => void;
   onOpen: () => void;
   onArchive: () => void;
@@ -359,9 +483,22 @@ function DealCard({
       onDragStart={() => { draggedRef.current = true; onDragStart(); }}
       onDragEnd={() => { window.setTimeout(() => { draggedRef.current = false; }, 50); }}
       onClick={() => { if (!draggedRef.current) onOpen(); }}
-      className="group relative cursor-pointer p-3 transition hover:border-[rgba(22,163,74,0.45)] active:cursor-grabbing rounded-xl border border-[rgba(22,163,74,0.25)] shadow-[0_0_20px_rgba(22,163,74,0.06),inset_0_1px_0_rgba(22,163,74,0.1)]"
+      className={`group relative cursor-pointer p-3 pl-8 transition hover:border-[rgba(22,163,74,0.45)] active:cursor-grabbing rounded-xl border shadow-[0_0_20px_rgba(22,163,74,0.06),inset_0_1px_0_rgba(22,163,74,0.1)] ${
+        selected ? 'border-[var(--accent-primary)] ring-1 ring-[var(--accent-primary)]' : 'border-[rgba(22,163,74,0.25)]'
+      }`}
       style={{ background: '#FFFFFF' }}
     >
+      {/* Checkbox de seleção (ações em massa) — canto superior esquerdo,
+          discreta até o card ser selecionado ou receber hover. */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggleSelect(); }}
+        title={selected ? 'Remover da seleção' : 'Selecionar negócio'}
+        className={`absolute left-2 top-3 rounded p-0.5 transition ${
+          selected ? 'text-[var(--accent-primary)] opacity-100' : 'text-[var(--color-text-secondary)] opacity-0 group-hover:opacity-100'
+        }`}
+      >
+        {selected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+      </button>
       <div className="flex items-start justify-between gap-2">
         {/* Ajuste 3: nome do LEAD em destaque, produto(s) como subtítulo */}
         <div className="min-w-0">
