@@ -15,6 +15,7 @@ const InboxPage = lazy(() => import('./routes/inbox/InboxPage'));
 const CampaignsPage = lazy(() => import('./routes/campaigns/CampaignsPage'));
 const CalendarPage = lazy(() => import('./routes/calendar/CalendarPage'));
 const ContactsPage = lazy(() => import('./routes/contacts/ContactsPage'));
+const StudentsPage = lazy(() => import('./routes/students/StudentsPage'));
 const ContactDetailPage = lazy(() => import('./routes/contacts/ContactDetailPage'));
 const FunilPage = lazy(() => import('./routes/funil/FunilPage'));
 const AIAgentPage = lazy(() => import('./routes/ai-agent/AIAgentPage'));
@@ -159,6 +160,7 @@ export function AppRouter() {
           <Route path="/templates" element={<Navigate to="/campaigns?tab=templates" replace />} />
           <Route path="/contacts" element={<ContactsPage />} />
           <Route path="/contacts/:id" element={<ContactDetailPage />} />
+          <Route path="/alunos" element={<StudentsPage />} />
           <Route path="/funil" element={<AdminOnly><FunilPage /></AdminOnly>} />
           {/* /vendas (Vendas & Recompra) removido — redireciona pro dashboard */}
           <Route path="/vendas" element={<Navigate to="/dashboard" replace />} />

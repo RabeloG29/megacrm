@@ -9,6 +9,7 @@ import {
   Zap,
   Building2,
   CalendarDays,
+  GraduationCap,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -35,6 +36,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/inbox', label: 'Inbox', icon: Inbox },
   { to: '/funil', label: 'Funil', icon: KanbanSquare, adminOnly: true },
   { to: '/contacts', label: 'Contatos', icon: Users },
+  { to: '/alunos', label: 'Alunos', icon: GraduationCap },
   { to: '/calendario', label: 'Calendário', icon: CalendarDays },
   { to: '/campaigns', label: 'Campanhas', icon: Megaphone },
   { to: '/automations', label: 'Automações', icon: Zap, adminOnly: true },
