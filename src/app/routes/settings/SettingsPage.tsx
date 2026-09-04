@@ -5,6 +5,7 @@ import {
   MessagesSquare,
   Package,
   Settings as SettingsIcon,
+  ThumbsDown,
   UserCircle2,
   Users,
 } from 'lucide-react';
@@ -15,6 +16,7 @@ import { AccountSettings } from './sections/AccountSettings';
 import { TeamSettings } from './sections/TeamSettings';
 import { ChannelsSettings } from './sections/ChannelsSettings';
 import { ProductsSettings } from './sections/ProductsSettings';
+import { LossReasonsSettings } from './sections/LossReasonsSettings';
 import { ScriptsSettings } from './sections/ScriptsSettings';
 
 type TabId =
@@ -22,6 +24,7 @@ type TabId =
   | 'team'
   | 'channels'
   | 'products'
+  | 'loss_reasons'
   | 'scripts';
 
 interface TabDef {
@@ -74,6 +77,14 @@ export default function SettingsPage() {
             icon: Package,
             adminOnly: true,
             render: () => <ProductsSettings />,
+          },
+          {
+            id: 'loss_reasons',
+            label: 'Motivos de perda',
+            hint: 'Ao marcar como perdido',
+            icon: ThumbsDown,
+            adminOnly: true,
+            render: () => <LossReasonsSettings />,
           },
           {
             id: 'scripts',

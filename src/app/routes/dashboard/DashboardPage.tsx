@@ -230,6 +230,14 @@ export default function DashboardPage() {
 
         {/* Demais widgets */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {show('motivos_perda') && (
+            <OriginBarsWidget
+              title="Motivos de perda"
+              data={metrics.lost.reasons}
+              emptyText="Nenhuma perda com motivo registrado no período."
+              color="#EF4444"
+            />
+          )}
           {show('ranking_vendedores') && (
             <div className="md:col-span-2">
               <RankingWidget ranking={metrics.ranking} ownerName={ownerName} />

@@ -6,6 +6,7 @@ import type {
   CustomFieldType,
   Deal,
   DealProduct,
+  LossReason,
   Product,
   Tag,
 } from '@/types/crm';
@@ -35,6 +36,7 @@ interface UseDealDetailResult {
   tags: Tag[];                  // tags associadas a este deal
   productCatalog: Product[];    // catálogo da org (autocomplete)
   tagCatalog: Tag[];            // catálogo de tags da org
+  lossReasonCatalog: LossReason[]; // motivos de perda cadastrados (Configurações)
   loading: boolean;
   error: string | null;
   reload: () => Promise<void>;
@@ -58,6 +60,7 @@ export function useDealDetail(deal: Deal | null): UseDealDetailResult {
   const [tags, setTags] = useState<Tag[]>([]);
   const [productCatalog, setProductCatalog] = useState<Product[]>([]);
   const [tagCatalog, setTagCatalog] = useState<Tag[]>([]);
+  const [lossReasonCatalog, setLossReasonCatalog] = useState<LossReason[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,7 +70,7 @@ export function useDealDetail(deal: Deal | null): UseDealDetailResult {
     setError(null);
     const supabase = getSupabase();
 
-    const [contactRes, fieldsRes, valuesRes, notesRes, dpRes, dtRes, prodRes, tagRes] = await Promise.all([
+    const [contactRes, fieldsRes, valuesRes, notesRes, dpRes, dtRes, prodRes, tagRes, lossReasonRes] = await Promise.all([
       supabase.from('contacts').select('id, name, phone, email, source, custom_fields, created_at, updated_at').eq('id', deal.contact_id).single(),
       supabase.from('custom_fields').select('*').order('position'),
       supabase.from('custom_field_values').select('*').eq('deal_id', deal.id),
@@ -76,6 +79,7 @@ export function useDealDetail(deal: Deal | null): UseDealDetailResult {
       supabase.from('deal_tags').select('tag:tag_id(id, name, color)').eq('deal_id', deal.id),
       supabase.from('products').select('id, name, product_type, quantity, price').order('name'),
       supabase.from('tags').select('id, name, color').order('name'),
+      supabase.from('loss_reasons').select('id, name').order('name'),
     ]);
 
     if (contactRes.error) {
@@ -99,6 +103,7 @@ export function useDealDetail(deal: Deal | null): UseDealDetailResult {
     setTags(((dtRes.data ?? []) as unknown as Array<{ tag: Tag | null }>).map((x) => x.tag).filter((t): t is Tag => Boolean(t)));
     setProductCatalog((prodRes.data ?? []) as Product[]);
     setTagCatalog((tagRes.data ?? []) as Tag[]);
+    setLossReasonCatalog((lossReasonRes.data ?? []) as LossReason[]);
     setLoading(false);
   }, [deal]);
 
@@ -227,7 +232,7 @@ export function useDealDetail(deal: Deal | null): UseDealDetailResult {
   }, [deal]);
 
   return {
-    contact, fields, values, notes, products, tags, productCatalog, tagCatalog,
+    contact, fields, values, notes, products, tags, productCatalog, tagCatalog, lossReasonCatalog,
     loading, error, reload,
     saveValue, addNote, createField, saveContact, saveDeal,
     addProduct, removeProduct, addTag, removeTag,

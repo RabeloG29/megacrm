@@ -3,6 +3,7 @@
 export type WidgetKey =
   | 'vendas_ganhas'
   | 'oportunidades_perdidas'
+  | 'motivos_perda'
   | 'ranking_vendedores'
   | 'forecast'
   | 'tempo_primeira_resposta'
@@ -28,6 +29,7 @@ export interface WidgetDef {
 export const WIDGETS: WidgetDef[] = [
   { key: 'vendas_ganhas', label: 'Vendas ganhas', group: 'Vendas' },
   { key: 'oportunidades_perdidas', label: 'Oportunidades perdidas', group: 'Vendas' },
+  { key: 'motivos_perda', label: 'Motivos de perda', group: 'Vendas' },
   { key: 'ranking_vendedores', label: 'Ranking de vendedores', group: 'Vendas' },
   { key: 'forecast', label: 'Forecast', group: 'Vendas' },
   { key: 'tempo_primeira_resposta', label: 'Tempo médio de 1ª resposta', group: 'Atendimento' },

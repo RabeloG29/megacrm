@@ -38,19 +38,24 @@ interface DealDrawerProps {
   onChanged: () => void | Promise<void>;
 }
 
+const CUSTOM_LOST_REASON = '__custom__';
+
 const inputCls =
   'w-full rounded-lg border border-[rgba(22,163,74,0.2)] bg-[rgba(22,163,74,0.06)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--accent-primary)]';
 
 export function DealDrawer({ deal, stages, pipelines, isAdmin, onClose, onStageChange, onChanged }: DealDrawerProps) {
   const detail = useDealDetail(deal);
-  const { contact, fields, values, notes, products, tags, productCatalog, tagCatalog, loading, error } = detail;
+  const { contact, fields, values, notes, products, tags, productCatalog, tagCatalog, lossReasonCatalog, loading, error } = detail;
   const { operators } = useOperators();
   const [note, setNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [fieldModal, setFieldModal] = useState(false);
   const [stageId, setStageId] = useState(deal.stage_id ?? '');
   const [lostReasonOpen, setLostReasonOpen] = useState(false);
-  const [lostReason, setLostReason] = useState(deal.lost_reason ?? '');
+  // Motivo escolhido no <select> do catálogo (Configurações → Motivos de
+  // perda); CUSTOM_LOST_REASON revela um campo livre para casos não cobertos.
+  const [lostReasonId, setLostReasonId] = useState('');
+  const [lostReasonCustom, setLostReasonCustom] = useState('');
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -93,11 +98,16 @@ export function DealDrawer({ deal, stages, pipelines, isAdmin, onClose, onStageC
     void saveDealField(patch, 'Marcado como ganho. 🎉');
   };
   const markLost = () => {
-    void saveDealField({ status: 'lost', lost_reason: lostReason.trim() || null }, 'Marcado como perdido.');
+    const chosenName =
+      lostReasonId === CUSTOM_LOST_REASON
+        ? lostReasonCustom.trim()
+        : lossReasonCatalog.find((r) => r.id === lostReasonId)?.name ?? '';
+    void saveDealField({ status: 'lost', lost_reason: chosenName || null }, 'Marcado como perdido.');
     setLostReasonOpen(false);
   };
   const reopen = () => {
-    setLostReason('');
+    setLostReasonId('');
+    setLostReasonCustom('');
     void saveDealField({ status: 'open' }, 'Negócio reaberto.');
   };
 
@@ -220,14 +230,28 @@ export function DealDrawer({ deal, stages, pipelines, isAdmin, onClose, onStageC
                   </div>
                   {lostReasonOpen && (
                     <div className="space-y-2 rounded-lg border border-[rgba(239,68,68,0.2)] bg-[rgba(239,68,68,0.05)] p-3">
-                      <input
-                        value={lostReason}
-                        onChange={(e) => setLostReason(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && markLost()}
-                        placeholder="Motivo da perda (opcional)"
+                      <select
+                        value={lostReasonId}
+                        onChange={(e) => setLostReasonId(e.target.value)}
                         className={inputCls}
                         autoFocus
-                      />
+                      >
+                        <option value="">Motivo da perda (opcional)</option>
+                        {lossReasonCatalog.map((r) => (
+                          <option key={r.id} value={r.id}>{r.name}</option>
+                        ))}
+                        <option value={CUSTOM_LOST_REASON}>Outro (especificar)...</option>
+                      </select>
+                      {lostReasonId === CUSTOM_LOST_REASON && (
+                        <input
+                          value={lostReasonCustom}
+                          onChange={(e) => setLostReasonCustom(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && markLost()}
+                          placeholder="Descreva o motivo"
+                          className={inputCls}
+                          autoFocus
+                        />
+                      )}
                       <button
                         onClick={markLost}
                         className="w-full rounded-lg bg-[#EF4444] py-2 text-sm font-semibold text-white transition hover:opacity-90"

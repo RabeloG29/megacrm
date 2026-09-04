@@ -103,6 +103,15 @@ export interface Tag {
   color: string;
 }
 
+// Motivo de perda cadastrável (Configurações → Motivos de perda). Selecionável
+// ao marcar um negócio como perdido no DealDrawer; salvo em deals.lost_reason
+// (texto) para manter compatibilidade com registros antigos e com o
+// agrupamento já existente no dashboard (useSalesDashboard).
+export interface LossReason {
+  id: string;
+  name: string;
+}
+
 // Contato resumido embutido nas queries (PostgREST embedding via FK).
 // email/custom_fields são opcionais: o board embute para os filtros do funil
 // (e-mail, empresa); listas mais antigas seguem só com id/name/phone.
