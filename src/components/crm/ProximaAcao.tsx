@@ -16,6 +16,15 @@ const inputCls =
 
 const TONE_LABEL: Record<string, string> = { overdue: 'Atrasada', today: 'Hoje', future: 'Agendada' };
 
+// Data/hora atual formatada para <input type="datetime-local"> (fuso local do
+// navegador). Usado para o campo já nascer preenchido com "agora", em vez de
+// vazio — o vendedor só ajusta se quiser outro horário.
+function nowForDateTimeLocal(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 const fmtDue = (s: string | null) =>
   s
     ? new Date(s).toLocaleString('pt-BR', {
@@ -50,7 +59,7 @@ export function ProximaAcao({ dealId, contactId, deals }: ProximaAcaoProps) {
   );
 
   const [text, setText] = useState('');
-  const [dueLocal, setDueLocal] = useState('');
+  const [dueLocal, setDueLocal] = useState(nowForDateTimeLocal);
   const [type, setType] = useState<CrmActionType>('followup');
   const [dealChoice, setDealChoice] = useState('');
   const [busy, setBusy] = useState(false);
@@ -76,7 +85,7 @@ export function ProximaAcao({ dealId, contactId, deals }: ProximaAcaoProps) {
       await schedule({ dealId: targetDeal, text, dueAt: new Date(dueLocal).toISOString(), type });
       toast.success('Próxima ação agendada.');
       setText('');
-      setDueLocal('');
+      setDueLocal(nowForDateTimeLocal());
       setType('followup');
     } catch (err) {
       toast.error('Falha ao agendar', { description: err instanceof Error ? err.message : String(err) });
