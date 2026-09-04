@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getSupabase } from '@/lib/supabase';
-import { CRM_ACTION_TYPES, type CrmActionType, type CrmActivity } from '@/types/crm';
+import { toDateKey } from '@/hooks/useCalendarReminders';
+import { CRM_ACTION_LABEL, CRM_ACTION_TYPES, type CrmActionType, type CrmActivity } from '@/types/crm';
 
 // Ação agendada com o título do negócio ancorado (preenchido no contexto de
 // contato, onde ações de vários negócios convivem na mesma lista).
@@ -106,21 +107,44 @@ export function useScheduledActions({
   const schedule = useCallback<UseScheduledActionsResult['schedule']>(
     async ({ dealId: targetDeal, text, dueAt, type }) => {
       const supabase = getSupabase();
-      // contact_id denormalizado a partir do negócio.
+      // contact_id denormalizado a partir do negócio; título só para compor o
+      // texto do lembrete que cai no Calendário.
       const { data: deal } = await supabase
         .from('deals')
-        .select('contact_id')
+        .select('contact_id, title')
         .eq('id', targetDeal)
         .single();
-      const { error } = await supabase.from('crm_activities').insert({
-        deal_id: targetDeal,
-        contact_id: (deal as { contact_id: string } | null)?.contact_id ?? null,
-        type,
-        body: text.trim(),
-        due_at: dueAt,
-        done: false,
-      });
+      const { data: activity, error } = await supabase
+        .from('crm_activities')
+        .insert({
+          deal_id: targetDeal,
+          contact_id: (deal as { contact_id: string } | null)?.contact_id ?? null,
+          type,
+          body: text.trim(),
+          due_at: dueAt,
+          done: false,
+        })
+        .select('id')
+        .single();
       if (error) throw new Error(error.message);
+
+      // Cai automaticamente no Calendário, na data marcada — o vendedor não
+      // precisa duplicar a anotação lá. Best-effort: se falhar (ex.: RLS),
+      // não desfaz o agendamento da ação em si.
+      const activityId = (activity as { id: string } | null)?.id;
+      if (activityId) {
+        const dealTitle = (deal as { title?: string } | null)?.title;
+        const time = new Date(dueAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const content = `${time} · ${CRM_ACTION_LABEL[type]}: ${text.trim()}${dealTitle ? ` (${dealTitle})` : ''}`;
+        const { error: remErr } = await supabase.from('calendar_reminders').insert({
+          reminder_date: toDateKey(new Date(dueAt)),
+          content,
+          color: 'blue',
+          source_activity_id: activityId,
+        });
+        if (remErr) console.error('Falha ao criar lembrete no calendário:', remErr.message);
+      }
+
       await reload();
     },
     [reload],

@@ -19,4 +19,8 @@ export interface CalendarReminder {
   color: ReminderColor;
   created_by: string | null;
   created_at: string;
+  // Preenchido quando o lembrete nasceu de uma "próxima ação" agendada
+  // (funil/inbox/contato) — ON DELETE CASCADE remove o post-it junto se a
+  // ação de origem for cancelada.
+  source_activity_id: string | null;
 }
