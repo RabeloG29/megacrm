@@ -71,6 +71,9 @@ export interface Product {
   // Estoque/quantidade — opcional para qualquer tipo.
   quantity: number | null;
   description: string | null;
+  // Preço de catálogo (opcional). Ao vincular o produto a um negócio no funil,
+  // pré-preenche automaticamente deals.value com este valor.
+  price: number | null;
 }
 
 // Script (mensagem pronta) — reutilizável no chat do Inbox e selecionável
