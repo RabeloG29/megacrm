@@ -74,7 +74,7 @@ export default function CalendarPage() {
           <div className="text-label">Seção</div>
           <h1 className="text-2xl font-bold text-display">Calendário</h1>
           <p className="text-sm text-[var(--color-text-secondary)]">
-            Clique numa data pra deixar um lembrete pro time — tipo um post-it
+            Clique numa data pra deixar um lembrete, tipo um post-it
           </p>
         </div>
       </div>
