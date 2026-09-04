@@ -74,6 +74,7 @@ export function ProductsSettings() {
   const [type, setType] = useState('curso');
   const [customType, setCustomType] = useState('');
   const [quantity, setQuantity] = useState('');
+  const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -82,6 +83,7 @@ export function ProductsSettings() {
   const [editType, setEditType] = useState('curso');
   const [editCustomType, setEditCustomType] = useState('');
   const [editQuantity, setEditQuantity] = useState('');
+  const [editPrice, setEditPrice] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editSaving, setEditSaving] = useState(false);
 
@@ -89,6 +91,18 @@ export function ProductsSettings() {
     const n = Number.parseInt(raw, 10);
     return Number.isFinite(n) && n >= 0 ? n : null;
   };
+
+  // Aceita formato BR ("1.997,00") ou solto ("1997.00" / "1997"). Vírgula
+  // presente = separador decimal BR, então "." vira separador de milhar.
+  const parsePrice = (raw: string): number | null => {
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    const cleaned = trimmed.includes(',') ? trimmed.replace(/\./g, '').replace(',', '.') : trimmed;
+    const n = Number.parseFloat(cleaned);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  };
+
+  const formatPriceInput = (value: number | null): string => (value != null ? String(value) : '');
 
   const resolveType = (selected: string, custom: string): string | null => {
     if (selected !== CUSTOM && PRODUCT_TYPE_LABELS[selected]) return selected;
@@ -110,6 +124,7 @@ export function ProductsSettings() {
         name,
         product_type: finalType,
         quantity: parseQty(quantity),
+        price: parsePrice(price),
         description: description.trim() || null,
       });
       toast.success('Produto cadastrado.');
@@ -117,6 +132,7 @@ export function ProductsSettings() {
       setType('curso');
       setCustomType('');
       setQuantity('');
+      setPrice('');
       setDescription('');
     } catch (err) {
       toast.error('Falha ao cadastrar', { description: err instanceof Error ? err.message : String(err) });
@@ -136,6 +152,7 @@ export function ProductsSettings() {
       setEditCustomType(p.product_type);
     }
     setEditQuantity(p.quantity != null ? String(p.quantity) : '');
+    setEditPrice(formatPriceInput(p.price));
     setEditDescription(p.description ?? '');
   };
 
@@ -152,6 +169,7 @@ export function ProductsSettings() {
         name: editName.trim(),
         product_type: finalType,
         quantity: parseQty(editQuantity),
+        price: parsePrice(editPrice),
         description: editDescription.trim() || null,
       });
       toast.success('Produto atualizado.');
@@ -185,7 +203,7 @@ export function ProductsSettings() {
             </p>
           </header>
 
-          <div className="grid grid-cols-1 sm:grid-cols-[1fr_220px_140px_auto] gap-3 items-start">
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_200px_120px_140px_auto] gap-3 items-start">
             <div className="space-y-2">
               <Label htmlFor="product_name">Nome *</Label>
               <Input
@@ -219,6 +237,17 @@ export function ProductsSettings() {
                 disabled={saving}
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="product_price">Preço (R$)</Label>
+              <Input
+                id="product_price"
+                inputMode="decimal"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="Ex.: 1997,00"
+                disabled={saving}
+              />
+            </div>
             <div className="pt-7">
               <Button type="submit" disabled={saving || !name.trim()}>
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
@@ -226,6 +255,9 @@ export function ProductsSettings() {
               </Button>
             </div>
           </div>
+          <p className="text-xs text-[var(--color-text-secondary)] opacity-70">
+            O preço pré-preenche automaticamente o valor do negócio quando o produto é vinculado a um lead no funil.
+          </p>
 
           <div className="space-y-2">
             <Label htmlFor="product_desc">Descrição</Label>
@@ -261,7 +293,7 @@ export function ProductsSettings() {
                     key={p.id}
                     className="space-y-2 rounded-lg border border-[rgba(22,163,74,0.25)] bg-[rgba(22,163,74,0.06)] p-3"
                   >
-                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_200px_120px] gap-2 items-start">
+                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_200px_100px_120px] gap-2 items-start">
                       <Input value={editName} onChange={(e) => setEditName(e.target.value)} disabled={editSaving} />
                       <TypePicker
                         value={editType}
@@ -277,6 +309,13 @@ export function ProductsSettings() {
                         value={editQuantity}
                         onChange={(e) => setEditQuantity(e.target.value)}
                         placeholder="Qtd."
+                        disabled={editSaving}
+                      />
+                      <Input
+                        inputMode="decimal"
+                        value={editPrice}
+                        onChange={(e) => setEditPrice(e.target.value)}
+                        placeholder="Preço (R$)"
                         disabled={editSaving}
                       />
                     </div>
@@ -311,6 +350,11 @@ export function ProductsSettings() {
                         {p.quantity != null && (
                           <span className="text-[10px] text-[var(--color-text-secondary)]">
                             Qtd.: {p.quantity}
+                          </span>
+                        )}
+                        {p.price != null && (
+                          <span className="rounded-full bg-[rgba(22,163,74,0.1)] px-2 py-0.5 text-[10px] font-semibold text-[var(--accent-primary)]">
+                            {p.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                           </span>
                         )}
                       </div>
