@@ -421,7 +421,7 @@ function ProductMultiSelect({
   selected, catalog, onAdd, onRemove,
 }: {
   selected: { id: string; name: string }[];
-  catalog: { id: string; name: string }[];
+  catalog: { id: string; name: string; price?: number | null }[];
   onAdd: (name: string) => void | Promise<void>;
   onRemove: (id: string) => void | Promise<void>;
 }) {
@@ -468,6 +468,9 @@ function ProductMultiSelect({
                       {active && <Check className="h-3 w-3 text-white" />}
                     </span>
                     <span className="min-w-0 flex-1 truncate">{p.name}</span>
+                    {p.price != null && (
+                      <span className="shrink-0 text-xs font-semibold text-[var(--accent-secondary)]">{brl(p.price)}</span>
+                    )}
                   </button>
                 );
               })
