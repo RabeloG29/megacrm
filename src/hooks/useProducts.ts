@@ -11,6 +11,7 @@ interface ProductInput {
   product_type: ProductType;
   quantity: number | null; // estoque opcional (qualquer tipo)
   description?: string | null;
+  price?: number | null; // preço de catálogo opcional
 }
 
 interface UseProductsResult {
@@ -23,13 +24,18 @@ interface UseProductsResult {
   remove: (id: string) => Promise<void>;
 }
 
-// Quantidade agora é opcional para qualquer tipo (classes personalizadas
-// como imóveis podem ter estoque) — só sanitiza negativos.
+// Quantidade e preço agora são opcionais (classes personalizadas como imóveis
+// podem ter estoque; preço fica opcional pra quem negocia caso a caso) — só
+// sanitiza negativos.
 function normalize<T extends Partial<ProductInput>>(input: T): T {
-  if (input.quantity != null && input.quantity < 0) {
-    return { ...input, quantity: null };
+  let out = input;
+  if (out.quantity != null && out.quantity < 0) {
+    out = { ...out, quantity: null };
   }
-  return input;
+  if (out.price != null && out.price < 0) {
+    out = { ...out, price: null };
+  }
+  return out;
 }
 
 export function useProducts(): UseProductsResult {
@@ -45,7 +51,7 @@ export function useProducts(): UseProductsResult {
     const supabase = getSupabase();
     const { data, error: err } = await supabase
       .from('products')
-      .select('id, name, product_type, quantity, description')
+      .select('id, name, product_type, quantity, description, price')
       .order('name', { ascending: true });
     if (err) setError(err.message);
     else setProducts((data ?? []) as Product[]);
@@ -63,7 +69,7 @@ export function useProducts(): UseProductsResult {
     const { data, error: err } = await supabase
       .from('products')
       .insert(payload)
-      .select('id, name, product_type, quantity, description')
+      .select('id, name, product_type, quantity, description, price')
       .single();
     if (err) {
       setError(err.message);

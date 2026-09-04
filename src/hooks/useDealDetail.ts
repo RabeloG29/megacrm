@@ -74,7 +74,7 @@ export function useDealDetail(deal: Deal | null): UseDealDetailResult {
       supabase.from('crm_activities').select('id, body, title, created_at').eq('deal_id', deal.id).eq('type', 'note').order('created_at', { ascending: false }).limit(100),
       supabase.from('deal_products').select('value, quantity, product:product_id(id, name)').eq('deal_id', deal.id),
       supabase.from('deal_tags').select('tag:tag_id(id, name, color)').eq('deal_id', deal.id),
-      supabase.from('products').select('id, name, product_type, quantity').order('name'),
+      supabase.from('products').select('id, name, product_type, quantity, price').order('name'),
       supabase.from('tags').select('id, name, color').order('name'),
     ]);
 
@@ -163,21 +163,47 @@ export function useDealDetail(deal: Deal | null): UseDealDetailResult {
     if (!trimmed) return;
     const supabase = getSupabase();
     // upsert no catálogo (unique name) e recupera o id
-    const { data: up, error: upErr } = await supabase.from('products').upsert({ name: trimmed }, { onConflict: 'name' }).select('id, name, product_type, quantity').single();
+    const { data: up, error: upErr } = await supabase.from('products').upsert({ name: trimmed }, { onConflict: 'name' }).select('id, name, product_type, quantity, price').single();
     if (upErr) { setError(upErr.message); return; }
     const product = up as Product;
-    const { error: linkErr } = await supabase.from('deal_products').upsert({ deal_id: deal.id, product_id: product.id });
+    const alreadyLinked = products.some((p) => p.id === product.id);
+    const { error: linkErr } = await supabase
+      .from('deal_products')
+      .upsert({ deal_id: deal.id, product_id: product.id, value: product.price ?? null });
     if (linkErr) { setError(linkErr.message); return; }
-    setProducts((cur) => (cur.some((p) => p.id === product.id) ? cur : [...cur, { id: product.id, name: product.name, value: null, quantity: 1 }]));
+    setProducts((cur) => (cur.some((p) => p.id === product.id) ? cur : [...cur, { id: product.id, name: product.name, value: product.price ?? null, quantity: 1 }]));
     setProductCatalog((cur) => (cur.some((p) => p.id === product.id) ? cur : [...cur, product].sort((a, b) => a.name.localeCompare(b.name))));
-  }, [deal]);
+    // Pré-preenche o valor do negócio com o preço de catálogo do produto (soma
+    // ao valor atual) — só na primeira vez que este produto entra no negócio,
+    // pra já refletir no dashboard quando o negócio for marcado como ganho,
+    // sem precisar digitar manualmente. O vendedor ainda pode ajustar o campo
+    // "Valor" na mão depois (ex.: desconto).
+    if (!alreadyLinked && product.price) {
+      const nextValue = Number(deal.value ?? 0) + Number(product.price);
+      const { error: dealErr } = await supabase
+        .from('deals')
+        .update({ value: nextValue, updated_at: new Date().toISOString() })
+        .eq('id', deal.id);
+      if (dealErr) setError(dealErr.message);
+    }
+  }, [deal, products]);
 
   const removeProduct = useCallback(async (productId: string) => {
     if (!deal) return;
     const supabase = getSupabase();
+    const removed = products.find((p) => p.id === productId);
     setProducts((cur) => cur.filter((p) => p.id !== productId));
     await supabase.from('deal_products').delete().eq('deal_id', deal.id).eq('product_id', productId);
-  }, [deal]);
+    // Desfaz o valor pré-preenchido por este produto ao removê-lo.
+    if (removed?.value) {
+      const nextValue = Math.max(0, Number(deal.value ?? 0) - Number(removed.value));
+      const { error: dealErr } = await supabase
+        .from('deals')
+        .update({ value: nextValue, updated_at: new Date().toISOString() })
+        .eq('id', deal.id);
+      if (dealErr) setError(dealErr.message);
+    }
+  }, [deal, products]);
 
   const addTag = useCallback(async (name: string) => {
     if (!deal) return;
