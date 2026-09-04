@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { GraduationCap, Plus, Search, Upload, X } from 'lucide-react';
+import { Check, GraduationCap, Plus, Search, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStudents, type StudentSort } from '@/hooks/useStudents';
 import { useTags } from '@/hooks/useTags';
@@ -24,6 +24,7 @@ export default function StudentsPage() {
   const [pageSize, setPageSize] = useState<number>(25);
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
 
   const { tags } = useTags();
   const { products } = useProducts();
@@ -38,13 +39,18 @@ export default function StudentsPage() {
 
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
-  const handleRemoveEnrollment = async (linkId: string, label: string) => {
-    if (!confirm(`Remover "${label}" deste aluno?`)) return;
+  // Confirmação inline em vez de confirm() nativo — mesma razão do prompt()
+  // no StudentFormDialog: trava a aba em navegadores automatizados e é uma
+  // UX inconsistente (popup do SO, sem estilo do app). Primeiro clique no ×
+  // arma a confirmação (troca por ✓/×); segundo clique no ✓ efetiva.
+  const handleRemoveEnrollment = async (linkId: string) => {
     try {
       await removeEnrollment(linkId);
       toast.success('Removido.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Não foi possível remover.');
+    } finally {
+      setConfirmRemoveId(null);
     }
   };
 
@@ -160,9 +166,24 @@ export default function StudentsPage() {
                       className="inline-flex items-center gap-1 rounded-full bg-[rgba(22,163,74,0.1)] px-2 py-0.5 text-xs text-[var(--color-text-primary)]"
                     >
                       {en.product_name}
-                      <button type="button" onClick={() => void handleRemoveEnrollment(en.id, en.product_name)} aria-label="Remover">
-                        <X className="h-3 w-3 opacity-60" />
-                      </button>
+                      {confirmRemoveId === en.id ? (
+                        <span className="inline-flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => void handleRemoveEnrollment(en.id)}
+                            aria-label={`Confirmar remoção de ${en.product_name}`}
+                          >
+                            <Check className="h-3 w-3 text-[var(--color-error)]" />
+                          </button>
+                          <button type="button" onClick={() => setConfirmRemoveId(null)} aria-label="Cancelar remoção">
+                            <X className="h-3 w-3 opacity-60" />
+                          </button>
+                        </span>
+                      ) : (
+                        <button type="button" onClick={() => setConfirmRemoveId(en.id)} aria-label={`Remover ${en.product_name}`}>
+                          <X className="h-3 w-3 opacity-60" />
+                        </button>
+                      )}
                     </span>
                   ))}
                 </div>
@@ -229,14 +250,35 @@ export default function StudentsPage() {
                             title={`Matriculado em ${fmtDate(en.enrolled_at)}`}
                           >
                             {en.product_name}
-                            <button
-                              type="button"
-                              onClick={() => void handleRemoveEnrollment(en.id, en.product_name)}
-                              aria-label={`Remover ${en.product_name}`}
-                              className="opacity-60 hover:opacity-100"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
+                            {confirmRemoveId === en.id ? (
+                              <span className="inline-flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => void handleRemoveEnrollment(en.id)}
+                                  aria-label={`Confirmar remoção de ${en.product_name}`}
+                                  className="text-[var(--color-error)]"
+                                >
+                                  <Check className="h-3 w-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmRemoveId(null)}
+                                  aria-label="Cancelar remoção"
+                                  className="opacity-60 hover:opacity-100"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setConfirmRemoveId(en.id)}
+                                aria-label={`Remover ${en.product_name}`}
+                                className="opacity-60 hover:opacity-100"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            )}
                           </span>
                         ))}
                       </div>
