@@ -27,6 +27,9 @@ export function StudentFormDialog({ open, onClose, onSaved }: StudentFormDialogP
   const [productId, setProductId] = useState('');
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
+  const [newProductMode, setNewProductMode] = useState(false);
+  const [newProductName, setNewProductName] = useState('');
+  const [creatingProduct, setCreatingProduct] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -35,6 +38,8 @@ export function StudentFormDialog({ open, onClose, onSaved }: StudentFormDialogP
     setEmail('');
     setProductId('');
     setSelectedTags(new Set());
+    setNewProductMode(false);
+    setNewProductName('');
   }, [open]);
 
   const phonePreview = phone.trim() ? normalizePhone(phone) : null;
@@ -48,16 +53,23 @@ export function StudentFormDialog({ open, onClose, onSaved }: StudentFormDialogP
     });
   };
 
-  const handleNewProduct = async () => {
-    const name = prompt('Nome do produto/curso:');
-    if (!name?.trim()) return;
+  // Campo inline em vez de prompt() nativo — trava a aba em navegadores
+  // automatizados e é uma UX ruim (popup do SO, sem estilo do app).
+  const handleCreateProduct = async () => {
+    const name = newProductName.trim();
+    if (!name) return;
+    setCreatingProduct(true);
     try {
-      const created = await createProduct({ name: name.trim(), product_type: 'curso', quantity: null });
+      const created = await createProduct({ name, product_type: 'curso', quantity: null });
       if (created) setProductId(created.id);
+      setNewProductMode(false);
+      setNewProductName('');
     } catch (err) {
       toast.error('Falha ao criar produto', {
         description: err instanceof Error ? err.message : String(err),
       });
+    } finally {
+      setCreatingProduct(false);
     }
   };
 
@@ -137,26 +149,58 @@ export function StudentFormDialog({ open, onClose, onSaved }: StudentFormDialogP
 
         <div className="space-y-2">
           <Label htmlFor="student_product">Produto / curso</Label>
-          <div className="flex gap-2">
-            <select
-              id="student_product"
-              value={productId}
-              onChange={(e) => setProductId(e.target.value)}
-              disabled={saving}
-              required
-              className="flex-1 h-10 rounded-lg border border-[rgba(22,163,74,0.12)] bg-[rgba(22,163,74,0.06)] px-3 text-sm text-[var(--color-text-primary)]"
-            >
-              <option value="">Selecione...</option>
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <Button type="button" variant="outline" onClick={handleNewProduct} disabled={saving}>
-              + Novo
-            </Button>
-          </div>
+          {newProductMode ? (
+            <div className="flex gap-2">
+              <Input
+                autoFocus
+                placeholder="Nome do produto/curso"
+                value={newProductName}
+                onChange={(e) => setNewProductName(e.target.value)}
+                disabled={creatingProduct}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    void handleCreateProduct();
+                  }
+                }}
+              />
+              <Button type="button" onClick={handleCreateProduct} disabled={creatingProduct || !newProductName.trim()}>
+                {creatingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Criar'}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setNewProductMode(false);
+                  setNewProductName('');
+                }}
+                disabled={creatingProduct}
+              >
+                Cancelar
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <select
+                id="student_product"
+                value={productId}
+                onChange={(e) => setProductId(e.target.value)}
+                disabled={saving}
+                required
+                className="flex-1 h-10 rounded-lg border border-[rgba(22,163,74,0.12)] bg-[rgba(22,163,74,0.06)] px-3 text-sm text-[var(--color-text-primary)]"
+              >
+                <option value="">Selecione...</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <Button type="button" variant="outline" onClick={() => setNewProductMode(true)} disabled={saving}>
+                + Novo
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
