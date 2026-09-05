@@ -26,6 +26,8 @@ export function StudentFormDialog({ open, onClose, onSaved }: StudentFormDialogP
   const [email, setEmail] = useState('');
   const [productId, setProductId] = useState('');
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  const [purchaseDate, setPurchaseDate] = useState('');
+  const [subscriptionExpiresAt, setSubscriptionExpiresAt] = useState('');
   const [saving, setSaving] = useState(false);
   const [newProductMode, setNewProductMode] = useState(false);
   const [newProductName, setNewProductName] = useState('');
@@ -38,6 +40,8 @@ export function StudentFormDialog({ open, onClose, onSaved }: StudentFormDialogP
     setEmail('');
     setProductId('');
     setSelectedTags(new Set());
+    setPurchaseDate('');
+    setSubscriptionExpiresAt('');
     setNewProductMode(false);
     setNewProductName('');
   }, [open]);
@@ -93,6 +97,8 @@ export function StudentFormDialog({ open, onClose, onSaved }: StudentFormDialogP
         email: email.trim() || null,
         productId,
         tagIds: Array.from(selectedTags),
+        purchaseDate: purchaseDate || null,
+        subscriptionExpiresAt: subscriptionExpiresAt || null,
       });
       toast.success('Aluno adicionado.');
       onSaved?.();
@@ -201,6 +207,29 @@ export function StudentFormDialog({ open, onClose, onSaved }: StudentFormDialogP
               </Button>
             </div>
           )}
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="student_purchase_date">Data de compra</Label>
+            <Input
+              id="student_purchase_date"
+              type="date"
+              value={purchaseDate}
+              onChange={(e) => setPurchaseDate(e.target.value)}
+              disabled={saving}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="student_subscription_expires_at">Vencimento da assinatura</Label>
+            <Input
+              id="student_subscription_expires_at"
+              type="date"
+              value={subscriptionExpiresAt}
+              onChange={(e) => setSubscriptionExpiresAt(e.target.value)}
+              disabled={saving}
+            />
+          </div>
         </div>
 
         <div className="space-y-2">

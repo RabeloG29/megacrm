@@ -197,6 +197,10 @@ export default function StudentsPage() {
                     ))}
                   </div>
                 )}
+                <div className="mt-2 flex flex-wrap gap-3 text-xs text-[var(--color-text-secondary)]">
+                  <span>Compra: {fmtDate(s.purchase_date)}</span>
+                  <span>Vencimento: {fmtDate(s.subscription_expires_at)}</span>
+                </div>
               </div>
             ))
           )}
@@ -211,6 +215,8 @@ export default function StudentsPage() {
                 <th className="p-3 text-label">Telefone</th>
                 <th className="p-3 text-label">Produtos</th>
                 <th className="p-3 text-label">Tags</th>
+                <th className="p-3 text-label">Compra</th>
+                <th className="p-3 text-label">Vencimento</th>
                 <th className="p-3 text-label">Cadastro</th>
                 <th className="p-3 w-20" />
               </tr>
@@ -218,13 +224,13 @@ export default function StudentsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-[var(--color-text-secondary)] opacity-60">
+                  <td colSpan={8} className="p-8 text-center text-[var(--color-text-secondary)] opacity-60">
                     Carregando...
                   </td>
                 </tr>
               ) : students.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-[var(--color-text-secondary)] opacity-60">
+                  <td colSpan={8} className="p-8 text-center text-[var(--color-text-secondary)] opacity-60">
                     {search || tagFilter || productFilter
                       ? 'Nenhum aluno encontrado com estes filtros.'
                       : 'Nenhum aluno ainda — adicione manualmente ou importe um CSV.'}
@@ -296,6 +302,8 @@ export default function StudentsPage() {
                         )}
                       </div>
                     </td>
+                    <td className="p-3 text-xs text-[var(--color-text-secondary)]">{fmtDate(s.purchase_date)}</td>
+                    <td className="p-3 text-xs text-[var(--color-text-secondary)]">{fmtDate(s.subscription_expires_at)}</td>
                     <td className="p-3 text-xs text-[var(--color-text-secondary)]">
                       {fmtDate(s.first_seen_at ?? s.created_at)}
                     </td>

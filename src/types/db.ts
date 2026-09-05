@@ -23,6 +23,15 @@ export interface Contact {
   profile_pic_url?: string | null;
   // Data do primeiro registro do contato (Módulo 5) — coluna da lista.
   first_seen_at?: string | null;
+  // Módulo Alunos: toggle manual "Aluno?" no cadastro do contato — fonte de
+  // verdade de quem aparece em /alunos (ter matrícula em student_products
+  // também liga isso, ver useStudents.addStudent).
+  is_student: boolean;
+  // Data de compra e vencimento da assinatura — só fazem sentido quando
+  // is_student=true, mas ficam sempre no tipo (podem vir preenchidas mesmo
+  // que o toggle seja desmarcado depois).
+  purchase_date: string | null;
+  subscription_expires_at: string | null;
   custom_fields: Record<string, unknown>;
   created_at: string;
   updated_at: string;

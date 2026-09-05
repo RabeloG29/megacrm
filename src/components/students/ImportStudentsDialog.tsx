@@ -13,7 +13,9 @@ type FieldMapping =
   | { kind: 'phone' }
   | { kind: 'name' }
   | { kind: 'email' }
-  | { kind: 'product' };
+  | { kind: 'product' }
+  | { kind: 'purchase_date' }
+  | { kind: 'subscription_expiry' };
 
 interface ImportStudentsDialogProps {
   open: boolean;
@@ -54,8 +56,27 @@ function guessInitialMapping(headers: string[]): FieldMapping[] {
     if (/(name|nome)/.test(low)) return { kind: 'name' };
     if (/(email|e-mail|mail)/.test(low)) return { kind: 'email' };
     if (/(produto|curso|pos|pós)/.test(low)) return { kind: 'product' };
+    if (/(compra|purchase)/.test(low)) return { kind: 'purchase_date' };
+    if (/(vencimento|expira|assinatura|subscription)/.test(low)) return { kind: 'subscription_expiry' };
     return { kind: 'skip' };
   });
+}
+
+// Aceita ISO (yyyy-mm-dd), dd/mm/yyyy ou dd-mm-yyyy, e cai pro parser nativo
+// do Date como último recurso — devolve null (campo opcional) se não conseguir
+// entender, em vez de travar a linha inteira do import.
+function parseDateCell(raw: string): string | null {
+  const v = raw.trim();
+  if (!v) return null;
+  const iso = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const br = v.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (br) {
+    const [, d, m, y] = br;
+    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+  const parsed = new Date(v);
+  return isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(0, 10);
 }
 
 // Resolve (ou cria) o produto pelo nome — catálogo é reaproveitado entre
@@ -166,6 +187,8 @@ export function ImportStudentsDialog({ open, onClose, onDone }: ImportStudentsDi
     const total = data.length;
     const nameIdx = mapping.findIndex((m) => m.kind === 'name');
     const emailIdx = mapping.findIndex((m) => m.kind === 'email');
+    const purchaseIdx = mapping.findIndex((m) => m.kind === 'purchase_date');
+    const subscriptionIdx = mapping.findIndex((m) => m.kind === 'subscription_expiry');
 
     const errors: { row: number; reason: string }[] = [];
     let imported = 0;
@@ -192,6 +215,8 @@ export function ImportStudentsDialog({ open, onClose, onDone }: ImportStudentsDi
 
       try {
         const productId = await resolveProductId(productName, productCache);
+        const purchaseDate = purchaseIdx >= 0 ? parseDateCell(r[purchaseIdx] ?? '') : null;
+        const subscriptionExpiresAt = subscriptionIdx >= 0 ? parseDateCell(r[subscriptionIdx] ?? '') : null;
 
         const { data: existing } = await supabase
           .from('contacts')
@@ -208,11 +233,23 @@ export function ImportStudentsDialog({ open, onClose, onDone }: ImportStudentsDi
               name: nameIdx >= 0 ? r[nameIdx] || null : null,
               email: emailIdx >= 0 ? r[emailIdx] || null : null,
               custom_fields: {},
+              is_student: true,
+              purchase_date: purchaseDate,
+              subscription_expires_at: subscriptionExpiresAt,
             })
             .select('id')
             .single();
           if (createErr) throw new Error(createErr.message);
           contactId = created.id as string;
+        } else {
+          // Contato já existia (por telefone) — garante que passe a contar
+          // como aluno; só sobrescreve as datas se a planilha trouxe valor
+          // (célula vazia não apaga uma data já cadastrada).
+          const patch: Record<string, unknown> = { is_student: true };
+          if (purchaseDate) patch.purchase_date = purchaseDate;
+          if (subscriptionExpiresAt) patch.subscription_expires_at = subscriptionExpiresAt;
+          const { error: updErr } = await supabase.from('contacts').update(patch).eq('id', contactId);
+          if (updErr) throw new Error(updErr.message);
         }
 
         const { error: linkErr } = await supabase
@@ -307,6 +344,8 @@ export function ImportStudentsDialog({ open, onClose, onDone }: ImportStudentsDi
                         <option value="name">👤 nome</option>
                         <option value="email">📧 e-mail</option>
                         <option value="product">🎓 produto/curso</option>
+                        <option value="purchase_date">🗓️ data de compra</option>
+                        <option value="subscription_expiry">⏳ vencimento da assinatura</option>
                       </select>
                     </th>
                   ))}

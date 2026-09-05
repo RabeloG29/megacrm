@@ -23,6 +23,8 @@ interface AddStudentInput {
   email?: string | null;
   productId: string;
   tagIds?: string[];
+  purchaseDate?: string | null;
+  subscriptionExpiresAt?: string | null;
 }
 
 interface UseStudentsResult {
@@ -57,23 +59,45 @@ export function useStudents({
     setError(null);
     const supabase = getSupabase();
 
-    // Base: contact_ids com pelo menos 1 vínculo em student_products
-    // (é isso que faz alguém aparecer em "Alunos"), já filtrando por produto
-    // quando aplicável.
-    let linkQuery = supabase.from('student_products').select('contact_id, product_id');
-    if (productId) linkQuery = linkQuery.eq('product_id', productId);
-    const { data: linkRows, error: linkErr } = await linkQuery;
-    if (linkErr) {
-      setError(linkErr.message);
+    // Base: contacts.is_student=true (toggle manual do cadastro OU herdado de
+    // uma matrícula em student_products — ver addStudent/migration de
+    // backfill). Filtro por produto intersecta com quem tem aquele vínculo.
+    const { data: studentRows, error: studentErr } = await supabase
+      .from('contacts')
+      .select('id')
+      .eq('is_student', true);
+    if (studentErr) {
+      setError(studentErr.message);
       setLoading(false);
       return;
     }
-    let contactIds = Array.from(new Set((linkRows ?? []).map((r) => r.contact_id as string)));
+    let contactIds = (studentRows ?? []).map((r) => r.id as string);
     if (contactIds.length === 0) {
       setStudents([]);
       setTotal(0);
       setLoading(false);
       return;
+    }
+
+    if (productId) {
+      const { data: prodLinks, error: prodErr } = await supabase
+        .from('student_products')
+        .select('contact_id')
+        .eq('product_id', productId)
+        .in('contact_id', contactIds);
+      if (prodErr) {
+        setError(prodErr.message);
+        setLoading(false);
+        return;
+      }
+      const prodSet = new Set((prodLinks ?? []).map((r) => r.contact_id as string));
+      contactIds = contactIds.filter((id) => prodSet.has(id));
+      if (contactIds.length === 0) {
+        setStudents([]);
+        setTotal(0);
+        setLoading(false);
+        return;
+      }
     }
 
     // Filtro por tag intersecta com o conjunto acima.
@@ -207,6 +231,16 @@ export function useStudents({
         if (createErr) throw new Error(translateStudentError(createErr.message));
         contactId = created.id as string;
       }
+    }
+
+    // Garante que o contato (novo, reaproveitado por telefone, ou passado
+    // direto por id) passe a contar como aluno — e grava as datas, se informadas.
+    {
+      const patch: Record<string, unknown> = { is_student: true };
+      if (input.purchaseDate) patch.purchase_date = input.purchaseDate;
+      if (input.subscriptionExpiresAt) patch.subscription_expires_at = input.subscriptionExpiresAt;
+      const { error: flagErr } = await supabase.from('contacts').update(patch).eq('id', contactId);
+      if (flagErr) throw new Error(translateStudentError(flagErr.message));
     }
 
     const tagIds = input.tagIds ?? [];

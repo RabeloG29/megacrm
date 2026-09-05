@@ -44,6 +44,9 @@ export function ContactFormDialog({ open, onClose, contact, onSaved }: ContactFo
   const [email, setEmail] = useState('');
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [customFields, setCustomFields] = useState<CustomFieldEntry[]>([]);
+  const [isStudent, setIsStudent] = useState(false);
+  const [purchaseDate, setPurchaseDate] = useState('');
+  const [subscriptionExpiresAt, setSubscriptionExpiresAt] = useState('');
   const [saving, setSaving] = useState(false);
 
   const isEdit = Boolean(contact);
@@ -59,6 +62,9 @@ export function ContactFormDialog({ open, onClose, contact, onSaved }: ContactFo
         ? entriesFromCustomFields(contact.custom_fields)
         : [],
     );
+    setIsStudent(contact?.is_student ?? false);
+    setPurchaseDate(contact?.purchase_date ?? '');
+    setSubscriptionExpiresAt(contact?.subscription_expires_at ?? '');
   }, [open, contact]);
 
   const phonePreview = useMemo(() => {
@@ -85,6 +91,9 @@ export function ContactFormDialog({ open, onClose, contact, onSaved }: ContactFo
         email: email.trim() || null,
         custom_fields: customFieldsFromEntries(customFields),
         tag_ids: Array.from(selectedTags),
+        is_student: isStudent,
+        purchase_date: isStudent && purchaseDate ? purchaseDate : null,
+        subscription_expires_at: isStudent && subscriptionExpiresAt ? subscriptionExpiresAt : null,
       };
       if (isEdit && contact) {
         await update(contact.id, payload);
@@ -190,6 +199,43 @@ export function ContactFormDialog({ open, onClose, contact, onSaved }: ContactFo
                   </button>
                 );
               })}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-3 rounded-lg border border-[rgba(22,163,74,0.12)] bg-[rgba(22,163,74,0.05)] p-3">
+          <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[var(--color-text-primary)]">
+            <input
+              type="checkbox"
+              checked={isStudent}
+              onChange={(e) => setIsStudent(e.target.checked)}
+              disabled={saving}
+              className="h-4 w-4 accent-[#16A34A]"
+            />
+            Aluno?
+          </label>
+          {isStudent && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="contact_purchase_date">Data de compra</Label>
+                <Input
+                  id="contact_purchase_date"
+                  type="date"
+                  value={purchaseDate}
+                  onChange={(e) => setPurchaseDate(e.target.value)}
+                  disabled={saving}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="contact_subscription_expires_at">Vencimento da assinatura</Label>
+                <Input
+                  id="contact_subscription_expires_at"
+                  type="date"
+                  value={subscriptionExpiresAt}
+                  onChange={(e) => setSubscriptionExpiresAt(e.target.value)}
+                  disabled={saving}
+                />
+              </div>
             </div>
           )}
         </div>

@@ -37,11 +37,16 @@ interface UseContactsResult {
   error: string | null;
   reload: () => Promise<void>;
   create: (
-    input: Pick<Contact, 'phone'> & Partial<Pick<Contact, 'name' | 'email' | 'custom_fields'>> & { tag_ids?: string[] },
+    input: Pick<Contact, 'phone'> &
+      Partial<Pick<Contact, 'name' | 'email' | 'custom_fields' | 'is_student' | 'purchase_date' | 'subscription_expires_at'>> & {
+        tag_ids?: string[];
+      },
   ) => Promise<Contact | null>;
   update: (
     id: string,
-    patch: Partial<Pick<Contact, 'name' | 'email' | 'phone' | 'custom_fields'>> & { tag_ids?: string[] },
+    patch: Partial<
+      Pick<Contact, 'name' | 'email' | 'phone' | 'custom_fields' | 'is_student' | 'purchase_date' | 'subscription_expires_at'>
+    > & { tag_ids?: string[] },
   ) => Promise<void>;
   remove: (ids: string[]) => Promise<void>;
   assignTags: (contactIds: string[], tagIds: string[]) => Promise<void>;
@@ -319,6 +324,9 @@ export function useContacts({
         name: contactPayload.name ?? null,
         email: contactPayload.email ?? null,
         custom_fields: contactPayload.custom_fields ?? {},
+        is_student: contactPayload.is_student ?? false,
+        purchase_date: contactPayload.purchase_date ?? null,
+        subscription_expires_at: contactPayload.subscription_expires_at ?? null,
       })
       .select()
       .single();

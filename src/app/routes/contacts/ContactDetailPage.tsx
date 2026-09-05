@@ -87,6 +87,14 @@ export default function ContactDetailPage() {
                 </span>
               )}
               <span>Primeiro registro: {new Date(contact.first_seen_at ?? contact.created_at).toLocaleDateString('pt-BR')}</span>
+              {contact.is_student && (
+                <span className="rounded-full bg-[rgba(16,185,129,0.14)] px-2 py-0.5 text-[#10B981]">
+                  🎓 Aluno
+                  {contact.purchase_date && ` · Compra: ${new Date(contact.purchase_date + 'T12:00:00').toLocaleDateString('pt-BR')}`}
+                  {contact.subscription_expires_at &&
+                    ` · Vence: ${new Date(contact.subscription_expires_at + 'T12:00:00').toLocaleDateString('pt-BR')}`}
+                </span>
+              )}
             </div>
           </div>
         </div>
