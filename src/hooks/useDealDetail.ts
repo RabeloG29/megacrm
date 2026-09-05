@@ -215,7 +215,9 @@ export function useDealDetail(deal: Deal | null): UseDealDetailResult {
     const trimmed = name.trim();
     if (!trimmed) return;
     const supabase = getSupabase();
-    const { data: up, error: upErr } = await supabase.from('tags').upsert({ name: trimmed, color: TAG_DEFAULT_COLOR }, { onConflict: 'name' }).select('id, name, color').single();
+    // onConflict usa a constraint UNIQUE(org_id, name) (tags_org_name_key) —
+    // "name" sozinho não existe mais como constraint única desde o multi-tenant.
+    const { data: up, error: upErr } = await supabase.from('tags').upsert({ name: trimmed, color: TAG_DEFAULT_COLOR }, { onConflict: 'org_id,name' }).select('id, name, color').single();
     if (upErr) { setError(upErr.message); return; }
     const tag = up as Tag;
     const { error: linkErr } = await supabase.from('deal_tags').upsert({ deal_id: deal.id, tag_id: tag.id });

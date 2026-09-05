@@ -184,13 +184,16 @@ export function ImportContactsDialog({
       });
     }
 
-    // Chunked upsert — onConflict uses the UNIQUE(phone) constraint.
+    // Chunked upsert — onConflict usa a constraint UNIQUE(org_id, phone)
+    // (contacts_org_phone_key, da migration multi-tenant). "phone" sozinho
+    // não existe mais como constraint única — dava "no unique or exclusion
+    // constraint matching the ON CONFLICT specification" e zerava o import.
     let imported = 0;
     for (let i = 0; i < pending.length; i += CHUNK_SIZE) {
       const chunk = pending.slice(i, i + CHUNK_SIZE);
       const { error } = await supabase
         .from('contacts')
-        .upsert(chunk, { onConflict: 'phone' });
+        .upsert(chunk, { onConflict: 'org_id,phone' });
       if (error) {
         errors.push({ row: -1, reason: `batch ${i / CHUNK_SIZE + 1}: ${error.message}` });
       } else {

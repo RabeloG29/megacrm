@@ -143,9 +143,11 @@ export function CsvAudiencePicker({ disabled, onResolved }: CsvAudiencePickerPro
     let failed = 0;
     for (let i = 0; i < pending.length; i += CHUNK_SIZE) {
       const chunk = pending.slice(i, i + CHUNK_SIZE);
+      // onConflict usa a constraint UNIQUE(org_id, phone) — "phone" sozinho
+      // não existe mais como constraint única desde o multi-tenant.
       const { data: upserted, error } = await supabase
         .from('contacts')
-        .upsert(chunk, { onConflict: 'phone' })
+        .upsert(chunk, { onConflict: 'org_id,phone' })
         .select('id');
       if (error) {
         failed += chunk.length;
