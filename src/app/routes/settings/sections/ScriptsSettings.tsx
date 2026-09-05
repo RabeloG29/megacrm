@@ -1,6 +1,6 @@
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { toast } from 'sonner';
-import { FileText, Image as ImageIcon, Loader2, MessageSquareText, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { FileText, Image as ImageIcon, Loader2, MessageSquareText, Music, Pencil, Plus, Trash2, Video, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,8 +37,12 @@ export function ScriptsSettings() {
   const contentRef = useRef<HTMLTextAreaElement | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [audioFile, setAudioFile] = useState<File | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -47,12 +51,20 @@ export function ScriptsSettings() {
   const editContentRef = useRef<HTMLTextAreaElement | null>(null);
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
   const [editPdfFile, setEditPdfFile] = useState<File | null>(null);
+  const [editVideoFile, setEditVideoFile] = useState<File | null>(null);
+  const [editAudioFile, setEditAudioFile] = useState<File | null>(null);
   const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
   const [editImagePath, setEditImagePath] = useState<string | null>(null);
   const [editPdfUrl, setEditPdfUrl] = useState<string | null>(null);
   const [editPdfPath, setEditPdfPath] = useState<string | null>(null);
+  const [editVideoUrl, setEditVideoUrl] = useState<string | null>(null);
+  const [editVideoPath, setEditVideoPath] = useState<string | null>(null);
+  const [editAudioUrl, setEditAudioUrl] = useState<string | null>(null);
+  const [editAudioPath, setEditAudioPath] = useState<string | null>(null);
   const editImageInputRef = useRef<HTMLInputElement>(null);
   const editPdfInputRef = useRef<HTMLInputElement>(null);
+  const editVideoInputRef = useRef<HTMLInputElement>(null);
+  const editAudioInputRef = useRef<HTMLInputElement>(null);
 
   // Insere {{variavel}} na posição do cursor (ou no final, se o campo não
   // estiver focado) e atualiza o estado controlado do textarea.
@@ -124,6 +136,10 @@ export function ScriptsSettings() {
       let imagePath: string | null = null;
       let pdfUrl: string | null = null;
       let pdfPath: string | null = null;
+      let videoUrl: string | null = null;
+      let videoPath: string | null = null;
+      let audioUrl: string | null = null;
+      let audioPath: string | null = null;
       if (imageFile) {
         const uploaded = await uploadAttachment(imageFile, orgId);
         imageUrl = uploaded.url;
@@ -134,14 +150,39 @@ export function ScriptsSettings() {
         pdfUrl = uploaded.url;
         pdfPath = uploaded.path;
       }
-      await create({ title, content, image_url: imageUrl, image_path: imagePath, pdf_url: pdfUrl, pdf_path: pdfPath });
+      if (videoFile) {
+        const uploaded = await uploadAttachment(videoFile, orgId);
+        videoUrl = uploaded.url;
+        videoPath = uploaded.path;
+      }
+      if (audioFile) {
+        const uploaded = await uploadAttachment(audioFile, orgId);
+        audioUrl = uploaded.url;
+        audioPath = uploaded.path;
+      }
+      await create({
+        title,
+        content,
+        image_url: imageUrl,
+        image_path: imagePath,
+        pdf_url: pdfUrl,
+        pdf_path: pdfPath,
+        video_url: videoUrl,
+        video_path: videoPath,
+        audio_url: audioUrl,
+        audio_path: audioPath,
+      });
       toast.success('Script cadastrado.');
       setTitle('');
       setContent('');
       setImageFile(null);
       setPdfFile(null);
+      setVideoFile(null);
+      setAudioFile(null);
       if (imageInputRef.current) imageInputRef.current.value = '';
       if (pdfInputRef.current) pdfInputRef.current.value = '';
+      if (videoInputRef.current) videoInputRef.current.value = '';
+      if (audioInputRef.current) audioInputRef.current.value = '';
     } catch (err) {
       toast.error('Falha ao cadastrar', { description: err instanceof Error ? err.message : String(err) });
     } finally {
@@ -155,12 +196,20 @@ export function ScriptsSettings() {
     setEditContent(s.content);
     setEditImageFile(null);
     setEditPdfFile(null);
+    setEditVideoFile(null);
+    setEditAudioFile(null);
     setEditImageUrl(s.image_url);
     setEditImagePath(s.image_path);
     setEditPdfUrl(s.pdf_url);
     setEditPdfPath(s.pdf_path);
+    setEditVideoUrl(s.video_url);
+    setEditVideoPath(s.video_path);
+    setEditAudioUrl(s.audio_url);
+    setEditAudioPath(s.audio_path);
     if (editImageInputRef.current) editImageInputRef.current.value = '';
     if (editPdfInputRef.current) editPdfInputRef.current.value = '';
+    if (editVideoInputRef.current) editVideoInputRef.current.value = '';
+    if (editAudioInputRef.current) editAudioInputRef.current.value = '';
   };
 
   const handleUpdate = async () => {
@@ -195,6 +244,30 @@ export function ScriptsSettings() {
         pdfPath = null;
       }
 
+      let videoUrl = editVideoUrl;
+      let videoPath = editVideoPath;
+      if (editVideoFile) {
+        const uploaded = await uploadAttachment(editVideoFile, orgId);
+        await removeStoragePath(editVideoPath);
+        videoUrl = uploaded.url;
+        videoPath = uploaded.path;
+      } else if (editVideoUrl === null && editVideoPath) {
+        await removeStoragePath(editVideoPath);
+        videoPath = null;
+      }
+
+      let audioUrl = editAudioUrl;
+      let audioPath = editAudioPath;
+      if (editAudioFile) {
+        const uploaded = await uploadAttachment(editAudioFile, orgId);
+        await removeStoragePath(editAudioPath);
+        audioUrl = uploaded.url;
+        audioPath = uploaded.path;
+      } else if (editAudioUrl === null && editAudioPath) {
+        await removeStoragePath(editAudioPath);
+        audioPath = null;
+      }
+
       await update(editingId, {
         title: editTitle,
         content: editContent,
@@ -202,6 +275,10 @@ export function ScriptsSettings() {
         image_path: imagePath,
         pdf_url: pdfUrl,
         pdf_path: pdfPath,
+        video_url: videoUrl,
+        video_path: videoPath,
+        audio_url: audioUrl,
+        audio_path: audioPath,
       });
       toast.success('Script atualizado.');
       setEditingId(null);
@@ -218,6 +295,8 @@ export function ScriptsSettings() {
       await remove(s.id);
       await removeStoragePath(s.image_path);
       await removeStoragePath(s.pdf_path);
+      await removeStoragePath(s.video_path);
+      await removeStoragePath(s.audio_path);
       toast.success('Script excluído.');
     } catch (err) {
       toast.error('Falha ao excluir', { description: err instanceof Error ? err.message : String(err) });
@@ -280,7 +359,7 @@ export function ScriptsSettings() {
 
           <div className="space-y-2">
             <Label>Anexos (opcional)</Label>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
               <div className="space-y-1.5">
                 <input
                   ref={imageInputRef}
@@ -345,6 +424,70 @@ export function ScriptsSettings() {
                   </button>
                 )}
               </div>
+              <div className="space-y-1.5">
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/*"
+                  className="hidden"
+                  onChange={(e) => onPickFile(e, setVideoFile)}
+                  disabled={saving}
+                />
+                {videoFile ? (
+                  <div className={attachChipCls}>
+                    <Video className="h-3.5 w-3.5 text-[var(--accent-primary)]" />
+                    <span className="truncate text-[var(--color-text-primary)]">{videoFile.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVideoFile(null);
+                        if (videoInputRef.current) videoInputRef.current.value = '';
+                      }}
+                      className="ml-auto text-[var(--color-text-secondary)] hover:text-[var(--color-error)]"
+                      aria-label="Remover vídeo"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => videoInputRef.current?.click()} disabled={saving} className={attachBtnCls}>
+                    <Video className="h-3.5 w-3.5" />
+                    Anexar vídeo
+                  </button>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <input
+                  ref={audioInputRef}
+                  type="file"
+                  accept="audio/*"
+                  className="hidden"
+                  onChange={(e) => onPickFile(e, setAudioFile)}
+                  disabled={saving}
+                />
+                {audioFile ? (
+                  <div className={attachChipCls}>
+                    <Music className="h-3.5 w-3.5 text-[var(--accent-primary)]" />
+                    <span className="truncate text-[var(--color-text-primary)]">{audioFile.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAudioFile(null);
+                        if (audioInputRef.current) audioInputRef.current.value = '';
+                      }}
+                      className="ml-auto text-[var(--color-text-secondary)] hover:text-[var(--color-error)]"
+                      aria-label="Remover áudio"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => audioInputRef.current?.click()} disabled={saving} className={attachBtnCls}>
+                    <Music className="h-3.5 w-3.5" />
+                    Anexar áudio
+                  </button>
+                )}
+              </div>
             </div>
             <p className="text-[11px] text-[var(--color-text-secondary)]">
               Reenviados junto com o texto quando o script é usado no Inbox (máx 25MB cada).
@@ -401,7 +544,7 @@ export function ScriptsSettings() {
                         </button>
                       ))}
                     </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
                       <div className="space-y-1.5">
                         <input
                           ref={editImageInputRef}
@@ -496,6 +639,100 @@ export function ScriptsSettings() {
                           </button>
                         )}
                       </div>
+                      <div className="space-y-1.5">
+                        <input
+                          ref={editVideoInputRef}
+                          type="file"
+                          accept="video/*"
+                          className="hidden"
+                          onChange={(e) => onPickFile(e, setEditVideoFile)}
+                          disabled={editSaving}
+                        />
+                        {editVideoFile ? (
+                          <div className={attachChipCls}>
+                            <Video className="h-3.5 w-3.5 text-[var(--accent-primary)]" />
+                            <span className="truncate text-[var(--color-text-primary)]">{editVideoFile.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditVideoFile(null);
+                                if (editVideoInputRef.current) editVideoInputRef.current.value = '';
+                              }}
+                              className="ml-auto text-[var(--color-text-secondary)] hover:text-[var(--color-error)]"
+                              aria-label="Remover vídeo"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ) : editVideoUrl ? (
+                          <div className={attachChipCls}>
+                            <Video className="h-3.5 w-3.5 text-[var(--accent-primary)]" />
+                            <a href={editVideoUrl} target="_blank" rel="noreferrer" className="truncate text-[var(--accent-primary)] underline">
+                              Ver vídeo atual
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => setEditVideoUrl(null)}
+                              className="ml-auto text-[var(--color-text-secondary)] hover:text-[var(--color-error)]"
+                              aria-label="Remover vídeo"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button type="button" onClick={() => editVideoInputRef.current?.click()} disabled={editSaving} className={attachBtnCls}>
+                            <Video className="h-3.5 w-3.5" />
+                            Anexar vídeo
+                          </button>
+                        )}
+                      </div>
+                      <div className="space-y-1.5">
+                        <input
+                          ref={editAudioInputRef}
+                          type="file"
+                          accept="audio/*"
+                          className="hidden"
+                          onChange={(e) => onPickFile(e, setEditAudioFile)}
+                          disabled={editSaving}
+                        />
+                        {editAudioFile ? (
+                          <div className={attachChipCls}>
+                            <Music className="h-3.5 w-3.5 text-[var(--accent-primary)]" />
+                            <span className="truncate text-[var(--color-text-primary)]">{editAudioFile.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditAudioFile(null);
+                                if (editAudioInputRef.current) editAudioInputRef.current.value = '';
+                              }}
+                              className="ml-auto text-[var(--color-text-secondary)] hover:text-[var(--color-error)]"
+                              aria-label="Remover áudio"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ) : editAudioUrl ? (
+                          <div className={attachChipCls}>
+                            <Music className="h-3.5 w-3.5 text-[var(--accent-primary)]" />
+                            <a href={editAudioUrl} target="_blank" rel="noreferrer" className="truncate text-[var(--accent-primary)] underline">
+                              Ver áudio atual
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => setEditAudioUrl(null)}
+                              className="ml-auto text-[var(--color-text-secondary)] hover:text-[var(--color-error)]"
+                              aria-label="Remover áudio"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button type="button" onClick={() => editAudioInputRef.current?.click()} disabled={editSaving} className={attachBtnCls}>
+                            <Music className="h-3.5 w-3.5" />
+                            Anexar áudio
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-1 justify-end">
                       <Button size="sm" onClick={handleUpdate} disabled={editSaving || !editTitle.trim() || !editContent.trim()}>
@@ -516,6 +753,8 @@ export function ScriptsSettings() {
                         {s.title}
                         {s.image_url && <ImageIcon className="h-3 w-3 text-[var(--accent-primary)]" />}
                         {s.pdf_url && <FileText className="h-3 w-3 text-[var(--accent-primary)]" />}
+                        {s.video_url && <Video className="h-3 w-3 text-[var(--accent-primary)]" />}
+                        {s.audio_url && <Music className="h-3 w-3 text-[var(--accent-primary)]" />}
                       </span>
                       <p className="mt-0.5 line-clamp-2 text-xs text-[var(--color-text-secondary)]">{s.content}</p>
                     </div>

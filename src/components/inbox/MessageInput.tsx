@@ -173,6 +173,8 @@ export function MessageInput({ conversationId, disabled, withinWindow = true, on
     const attachments: { url: string; filename: string }[] = [];
     if (s.image_url) attachments.push({ url: s.image_url, filename: filenameFromUrl(s.image_url, 'imagem.jpg') });
     if (s.pdf_url) attachments.push({ url: s.pdf_url, filename: filenameFromUrl(s.pdf_url, 'documento.pdf') });
+    if (s.video_url) attachments.push({ url: s.video_url, filename: filenameFromUrl(s.video_url, 'video.mp4') });
+    if (s.audio_url) attachments.push({ url: s.audio_url, filename: filenameFromUrl(s.audio_url, 'audio.mp3') });
 
     if (attachments.length === 0) {
       setContent((prev) => (prev.trim() ? `${prev}\n${rendered}` : rendered));
@@ -392,7 +394,9 @@ export function MessageInput({ conversationId, disabled, withinWindow = true, on
                   >
                     <div className="flex items-center gap-1.5 font-medium">
                       {s.title}
-                      {(s.image_url || s.pdf_url) && <Paperclip className="h-3 w-3 text-[var(--color-text-secondary)]" />}
+                      {(s.image_url || s.pdf_url || s.video_url || s.audio_url) && (
+                        <Paperclip className="h-3 w-3 text-[var(--color-text-secondary)]" />
+                      )}
                     </div>
                     <div className="truncate text-xs text-[var(--color-text-secondary)]">{renderScriptContent(s.content, contact)}</div>
                   </button>

@@ -86,6 +86,10 @@ export interface Script {
   image_path: string | null;
   pdf_url: string | null;
   pdf_path: string | null;
+  video_url: string | null;
+  video_path: string | null;
+  audio_url: string | null;
+  audio_path: string | null;
 }
 
 // Quick Reply (resposta rápida) — atalho simples de texto no composer do

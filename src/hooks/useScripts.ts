@@ -16,6 +16,10 @@ interface ScriptInput {
   image_path?: string | null;
   pdf_url?: string | null;
   pdf_path?: string | null;
+  video_url?: string | null;
+  video_path?: string | null;
+  audio_url?: string | null;
+  audio_path?: string | null;
 }
 
 interface UseScriptsResult {
@@ -28,7 +32,8 @@ interface UseScriptsResult {
   remove: (id: string) => Promise<void>;
 }
 
-const SCRIPT_COLUMNS = 'id, title, content, image_url, image_path, pdf_url, pdf_path';
+const SCRIPT_COLUMNS =
+  'id, title, content, image_url, image_path, pdf_url, pdf_path, video_url, video_path, audio_url, audio_path';
 
 export function useScripts(): UseScriptsResult {
   const { userId } = useAppUser();
@@ -64,6 +69,10 @@ export function useScripts(): UseScriptsResult {
       image_path: input.image_path ?? null,
       pdf_url: input.pdf_url ?? null,
       pdf_path: input.pdf_path ?? null,
+      video_url: input.video_url ?? null,
+      video_path: input.video_path ?? null,
+      audio_url: input.audio_url ?? null,
+      audio_path: input.audio_path ?? null,
     };
     const { data, error: err } = await supabase
       .from('scripts')
@@ -87,6 +96,10 @@ export function useScripts(): UseScriptsResult {
       ...(patch.image_path !== undefined ? { image_path: patch.image_path } : {}),
       ...(patch.pdf_url !== undefined ? { pdf_url: patch.pdf_url } : {}),
       ...(patch.pdf_path !== undefined ? { pdf_path: patch.pdf_path } : {}),
+      ...(patch.video_url !== undefined ? { video_url: patch.video_url } : {}),
+      ...(patch.video_path !== undefined ? { video_path: patch.video_path } : {}),
+      ...(patch.audio_url !== undefined ? { audio_url: patch.audio_url } : {}),
+      ...(patch.audio_path !== undefined ? { audio_path: patch.audio_path } : {}),
     };
     const { error: err } = await supabase
       .from('scripts')
