@@ -107,11 +107,12 @@ export function useScheduledActions({
   const schedule = useCallback<UseScheduledActionsResult['schedule']>(
     async ({ dealId: targetDeal, text, dueAt, type }) => {
       const supabase = getSupabase();
-      // contact_id denormalizado a partir do negócio; título só para compor o
-      // texto do lembrete que cai no Calendário.
+      // contact_id denormalizado a partir do negócio; título + nome/telefone
+      // do contato só para compor o texto do lembrete que cai no Calendário
+      // (pra não ficar "solto" sem saber de quem é).
       const { data: deal } = await supabase
         .from('deals')
-        .select('contact_id, title')
+        .select('contact_id, title, contact:contact_id(name, phone)')
         .eq('id', targetDeal)
         .single();
       const { data: activity, error } = await supabase
@@ -133,9 +134,18 @@ export function useScheduledActions({
       // não desfaz o agendamento da ação em si.
       const activityId = (activity as { id: string } | null)?.id;
       if (activityId) {
-        const dealTitle = (deal as { title?: string } | null)?.title;
+        const dealRow = deal as { title?: string; contact?: { name: string | null; phone: string | null } | null } | null;
+        const dealTitle = dealRow?.title;
+        const leadName = dealRow?.contact?.name?.trim();
+        const leadPhone = dealRow?.contact?.phone;
+        // Nome/telefone do lead sempre no lembrete, independente do tipo de
+        // ação — é o que mais importa pra identificar de quem é o lembrete
+        // sem precisar abrir o negócio.
+        const leadLabel = leadName || leadPhone
+          ? ` — ${leadName || 'Sem nome'}${leadPhone ? ` · ${leadPhone}` : ''}`
+          : '';
         const time = new Date(dueAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        const content = `${time} · ${CRM_ACTION_LABEL[type]}: ${text.trim()}${dealTitle ? ` (${dealTitle})` : ''}`;
+        const content = `${time} · ${CRM_ACTION_LABEL[type]}: ${text.trim()}${leadLabel}${dealTitle ? ` (${dealTitle})` : ''}`;
         const { error: remErr } = await supabase.from('calendar_reminders').insert({
           reminder_date: toDateKey(new Date(dueAt)),
           content,
