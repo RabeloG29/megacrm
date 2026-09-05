@@ -635,7 +635,7 @@ function DealCard({
           if (conversationId) navigate(`/inbox?conversation=${conversationId}`);
         }}
         title="Abrir conversa no Inbox"
-        className="absolute bottom-2 right-9 rounded-md border border-[rgba(22,163,74,0.25)] p-1 text-[var(--color-text-secondary)] opacity-0 transition group-hover:opacity-100 hover:bg-[rgba(22,163,74,0.12)] hover:text-[var(--accent-primary)] disabled:opacity-60"
+        className="absolute bottom-2 right-9 rounded-md border border-[rgba(22,163,74,0.25)] p-1 text-[var(--accent-primary)] transition hover:bg-[rgba(22,163,74,0.12)] disabled:opacity-60"
         style={{ background: '#FFFFFF' }}
       >
         <MessageCircle className="h-3.5 w-3.5" />
