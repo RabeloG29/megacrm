@@ -4,18 +4,21 @@ import { AuthProvider } from './app/providers/AuthProvider';
 import { AppUserProvider } from './app/providers/AppUserProvider';
 import { AppRouter } from './app/router';
 import { Toaster } from './components/ui/sonner';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 export default function App() {
   return (
-    <SupabaseProvider>
-      <AuthProvider>
-        <AppUserProvider>
-          <BrowserRouter>
-            <AppRouter />
-            <Toaster />
-          </BrowserRouter>
-        </AppUserProvider>
-      </AuthProvider>
-    </SupabaseProvider>
+    <ErrorBoundary>
+      <SupabaseProvider>
+        <AuthProvider>
+          <AppUserProvider>
+            <BrowserRouter>
+              <AppRouter />
+              <Toaster />
+            </BrowserRouter>
+          </AppUserProvider>
+        </AuthProvider>
+      </SupabaseProvider>
+    </ErrorBoundary>
   );
 }
