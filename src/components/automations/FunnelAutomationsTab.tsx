@@ -148,7 +148,11 @@ export function FunnelAutomationsTab() {
                   </div>
                   <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
                     Quando o lead entrar em <span className="text-[var(--accent-secondary)]">{stageName(a.stage_id)}</span> →{' '}
-                    {a.actions.map((act) => ACTION_TYPES.find((t) => t.value === act.type)?.label ?? act.type).join(' · ')}
+                    {a.actions.map((act) => {
+                      const label = ACTION_TYPES.find((t) => t.value === act.type)?.label ?? act.type;
+                      const bonusMsg = act.type !== 'send_text' && act.type !== 'send_template' && act.send_message;
+                      return bonusMsg ? `${label} (+ mensagem)` : label;
+                    }).join(' · ')}
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
@@ -333,6 +337,46 @@ function AutomationForm({
                 </>
               )}
             </div>
+
+            {/* Envio de mensagem opcional junto com a ação — não faz sentido
+                para send_text/send_template, que já SÃO o envio da mensagem. */}
+            {a.type !== 'send_text' && a.type !== 'send_template' && (
+              <div className="mt-2 border-t border-[rgba(59,130,246,0.12)] pt-2">
+                <label className="flex cursor-pointer items-center gap-2 text-xs text-[var(--color-text-secondary)]">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(a.send_message)}
+                    onChange={(e) => setAction(i, { send_message: e.target.checked })}
+                    className="accent-[var(--accent-primary)]"
+                  />
+                  + Enviar mensagem (opcional)
+                </label>
+                {Boolean(a.send_message) && (
+                  <div className="mt-2 space-y-2">
+                    {scripts.length > 0 && (
+                      <select
+                        value=""
+                        onChange={(e) => {
+                          const s = scripts.find((sc) => sc.id === e.target.value);
+                          if (s) setAction(i, { message_text: s.content });
+                        }}
+                        className={inputCls}
+                      >
+                        <option value="">Carregar de um script…</option>
+                        {scripts.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
+                      </select>
+                    )}
+                    <textarea
+                      value={String(a.message_text ?? '')}
+                      onChange={(e) => setAction(i, { message_text: e.target.value })}
+                      rows={2}
+                      placeholder="Mensagem a enviar junto com essa ação (ou escreva na hora)…"
+                      className={`${inputCls} resize-none`}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ))}
         <button onClick={addAction} className="inline-flex items-center gap-1 rounded-lg border border-dashed border-[rgba(59,130,246,0.3)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] transition hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)]">

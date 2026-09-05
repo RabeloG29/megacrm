@@ -14,6 +14,10 @@
 //   assign{user_id}                       → conversations.assigned_to
 //   add_to_pipeline{pipeline_id, stage_id}→ novo deal no outro funil (skip se
 //                                           o contato já tem deal lá — evita loop)
+//
+// Qualquer ação acima (exceto send_text/send_template, que já SÃO o envio de
+// uma mensagem) aceita opcionalmente send_message{true} + message_text —
+// dispara esse texto pela conversa do contato logo após a ação principal.
 // ============================================================================
 
 import { getAdminClient } from '../_shared/supabase-admin.ts';
@@ -81,18 +85,49 @@ async function recordSystemMessage(
   await admin.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', conversationId);
 }
 
+// Envia um texto pela conversa do contato (canal Zernio/UAZAPI). Reaproveitado
+// tanto pela ação send_text quanto pelo "+ Enviar mensagem" opcional bundlado
+// em qualquer outra ação.
+async function sendText(admin: Admin, deal: DealRow, text: string, errors: string[]): Promise<void> {
+  const conv = await conversationOf(admin, deal.org_id, deal.contact_id);
+  const { data: contact } = await admin
+    .from('contacts')
+    .select('phone, instagram_id')
+    .eq('org_id', deal.org_id)
+    .eq('id', deal.contact_id)
+    .maybeSingle();
+  const c = contact as { phone: string | null; instagram_id?: string | null } | null;
+  if (!conv || !c) { errors.push('send_text: contato sem conversa'); return; }
+  try {
+    const messageId = await sendInboxWithResolve(admin, {
+      conversationRowId: conv.id,
+      orgId: deal.org_id,
+      channel: conv.channel,
+      phone: c.phone,
+      instagramId: c.instagram_id ?? null,
+      storedZernioConversationId: conv.zernio_conversation_id,
+      channelId: conv.channel_id ?? null,
+      zernioAccountId: conv.zernio_account_id,
+      provider: conv.provider,
+    }, { text });
+    await recordSystemMessage(admin, deal.org_id, conv.id, 'text', text, messageId);
+  } catch (err) {
+    errors.push(`send_text: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
 async function runAction(admin: Admin, deal: DealRow, action: Action, errors: string[]): Promise<void> {
   const t = action.type;
+  let handled = false;
 
   if (t === 'add_tag' && typeof action.tag_id === 'string') {
+    handled = true;
     const { error } = await admin
       .from('deal_tags')
       .upsert({ org_id: deal.org_id, deal_id: deal.id, tag_id: action.tag_id }, { onConflict: 'deal_id,tag_id', ignoreDuplicates: true });
     if (error) errors.push(`add_tag: ${error.message}`);
-    return;
-  }
-
-  if (t === 'next_action') {
+  } else if (t === 'next_action') {
+    handled = true;
     const delayHours = Number(action.delay_hours) || 24;
     const { error } = await admin.from('crm_activities').insert({
       org_id: deal.org_id,
@@ -104,33 +139,28 @@ async function runAction(admin: Admin, deal: DealRow, action: Action, errors: st
       done: false,
     });
     if (error) errors.push(`next_action: ${error.message}`);
-    return;
-  }
-
-  if (t === 'set_lead_type' && (action.value === 'Lead' || action.value === 'Cliente')) {
+  } else if (t === 'set_lead_type' && (action.value === 'Lead' || action.value === 'Cliente')) {
+    handled = true;
     const { error } = await admin.from('deals').update({ lead_type: action.value }).eq('id', deal.id);
     if (error) errors.push(`set_lead_type: ${error.message}`);
-    return;
-  }
-
-  if (t === 'set_temperature' && ['Frio', 'Morno', 'Quente'].includes(String(action.value))) {
+  } else if (t === 'set_temperature' && ['Frio', 'Morno', 'Quente'].includes(String(action.value))) {
+    handled = true;
     const { error } = await admin.from('deals').update({ temperature: action.value }).eq('id', deal.id);
     if (error) errors.push(`set_temperature: ${error.message}`);
-    return;
-  }
-
-  if (t === 'assign' && typeof action.user_id === 'string') {
+  } else if (t === 'assign' && typeof action.user_id === 'string') {
+    handled = true;
     const conv = await conversationOf(admin, deal.org_id, deal.contact_id);
-    if (!conv) { errors.push('assign: contato sem conversa'); return; }
-    const { error } = await admin
-      .from('conversations')
-      .update({ assigned_to: action.user_id, assigned_at: new Date().toISOString() })
-      .eq('id', conv.id);
-    if (error) errors.push(`assign: ${error.message}`);
-    return;
-  }
-
-  if (t === 'add_to_pipeline' && typeof action.pipeline_id === 'string' && typeof action.stage_id === 'string') {
+    if (!conv) {
+      errors.push('assign: contato sem conversa');
+    } else {
+      const { error } = await admin
+        .from('conversations')
+        .update({ assigned_to: action.user_id, assigned_at: new Date().toISOString() })
+        .eq('id', conv.id);
+      if (error) errors.push(`assign: ${error.message}`);
+    }
+  } else if (t === 'add_to_pipeline' && typeof action.pipeline_id === 'string' && typeof action.stage_id === 'string') {
+    handled = true;
     // Skip se o contato já tem deal no funil destino — evita duplicação e
     // loops entre automações de funis diferentes.
     const { data: existing } = await admin
@@ -140,49 +170,23 @@ async function runAction(admin: Admin, deal: DealRow, action: Action, errors: st
       .eq('contact_id', deal.contact_id)
       .eq('pipeline_id', action.pipeline_id)
       .limit(1);
-    if ((existing ?? []).length > 0) return;
-    const { error } = await admin.from('deals').insert({
-      org_id: deal.org_id,
-      contact_id: deal.contact_id,
-      pipeline_id: action.pipeline_id,
-      stage_id: action.stage_id,
-      title: deal.title,
-      status: 'open',
-    });
-    if (error) errors.push(`add_to_pipeline: ${error.message}`);
-    return;
-  }
-
-  if (t === 'send_text' && typeof action.text === 'string' && action.text.trim()) {
-    const conv = await conversationOf(admin, deal.org_id, deal.contact_id);
-    const { data: contact } = await admin
-      .from('contacts')
-      .select('phone, instagram_id')
-      .eq('org_id', deal.org_id)
-      .eq('id', deal.contact_id)
-      .maybeSingle();
-    const c = contact as { phone: string | null; instagram_id?: string | null } | null;
-    if (!conv || !c) { errors.push('send_text: contato sem conversa'); return; }
-    try {
-      const messageId = await sendInboxWithResolve(admin, {
-        conversationRowId: conv.id,
-        orgId: deal.org_id,
-        channel: conv.channel,
-        phone: c.phone,
-        instagramId: c.instagram_id ?? null,
-        storedZernioConversationId: conv.zernio_conversation_id,
-        channelId: conv.channel_id ?? null,
-        zernioAccountId: conv.zernio_account_id,
-        provider: conv.provider,
-      }, { text: action.text });
-      await recordSystemMessage(admin, deal.org_id, conv.id, 'text', action.text, messageId);
-    } catch (err) {
-      errors.push(`send_text: ${err instanceof Error ? err.message : String(err)}`);
+    if ((existing ?? []).length === 0) {
+      const { error } = await admin.from('deals').insert({
+        org_id: deal.org_id,
+        contact_id: deal.contact_id,
+        pipeline_id: action.pipeline_id,
+        stage_id: action.stage_id,
+        title: deal.title,
+        status: 'open',
+      });
+      if (error) errors.push(`add_to_pipeline: ${error.message}`);
     }
+  } else if (t === 'send_text' && typeof action.text === 'string' && action.text.trim()) {
+    handled = true;
+    await sendText(admin, deal, action.text, errors);
+    // send_text já É o envio da mensagem — não dispara a mensagem bônus de novo.
     return;
-  }
-
-  if (t === 'send_template' && typeof action.template_id === 'string') {
+  } else if (t === 'send_template' && typeof action.template_id === 'string') {
     try {
       const { data: tpl } = await admin
         .from('templates')
@@ -227,10 +231,18 @@ async function runAction(admin: Admin, deal: DealRow, action: Action, errors: st
     } catch (err) {
       errors.push(`send_template: ${err instanceof Error ? err.message : String(err)}`);
     }
+    // send_template já É o envio da mensagem — não dispara a mensagem bônus de novo.
     return;
+  } else {
+    errors.push(`ação desconhecida/malformada: ${t}`);
   }
 
-  errors.push(`ação desconhecida/malformada: ${t}`);
+  // Mensagem extra opcional bundlada em qualquer ação acima (send_text e
+  // send_template já retornaram antes de chegar aqui, pois já são, por si só,
+  // o envio de uma mensagem).
+  if (handled && action.send_message && typeof action.message_text === 'string' && action.message_text.trim()) {
+    await sendText(admin, deal, action.message_text, errors);
+  }
 }
 
 Deno.serve(async (req) => {
