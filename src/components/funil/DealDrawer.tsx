@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { X, Phone, Mail, Building2, ChevronDown, MessageSquare, Plus, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { getSupabase } from '@/lib/supabase';
+import { playWinSound } from '@/lib/sounds';
 import { useDealDetail } from '@/hooks/useDealDetail';
 import { useOperators } from '@/hooks/useOperators';
 import { ProximaAcao } from '@/components/crm/ProximaAcao';
@@ -83,6 +84,7 @@ export function DealDrawer({ deal, stages, pipelines, isAdmin, onClose, onStageC
   // Status manual do negócio (Módulo 3): won/lost preenchem won_at/lost_at via
   // trigger; perdido guarda o motivo. Reabrir volta para 'open' e limpa datas.
   const markWon = () => {
+    playWinSound();
     const patch: Partial<Deal> = { status: 'won' };
     // Move automático para a etapa "Ganho" só quando o lead está no funil
     // padrão e a etapa (is_won) ainda existe; caso contrário, apenas o status

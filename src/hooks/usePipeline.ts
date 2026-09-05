@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getSupabase } from '@/lib/supabase';
+import { playWinSound } from '@/lib/sounds';
 import type { Pipeline, Stage, Deal, Tag } from '@/types/crm';
 
 const DEAL_SELECT =
@@ -214,7 +215,8 @@ export function usePipeline(): UsePipelineResult {
 
   const moveDeal = useCallback(
     async (dealId: string, stageId: string) => {
-      const prevStageId = deals.find((d) => d.id === dealId)?.stage_id ?? null;
+      const prevDeal = deals.find((d) => d.id === dealId);
+      const prevStageId = prevDeal?.stage_id ?? null;
       const stage = stages.find((s) => s.id === stageId);
       const patch: Partial<Deal> = { stage_id: stageId };
       // Regra de negócio: ganho → cliente Morno; perdido → volta a Lead Frio
@@ -230,6 +232,9 @@ export function usePipeline(): UsePipelineResult {
         patch.status = 'open';
       }
       setDeals((cur) => cur.map((d) => (d.id === dealId ? { ...d, ...patch } : d)));
+      // "Cha-ching!" só na transição para ganho (nunca em re-drag dentro da
+      // mesma coluna Ganho).
+      if (stage?.is_won && prevDeal?.status !== 'won') playWinSound();
       const supabase = getSupabase();
       const { error: err } = await supabase.from('deals').update(patch).eq('id', dealId);
       if (err) {
@@ -331,7 +336,9 @@ export function usePipeline(): UsePipelineResult {
       patch.status = 'open';
     }
     const prevStageById = new Map(deals.map((d) => [d.id, d.stage_id]));
+    const prevStatusById = new Map(deals.map((d) => [d.id, d.status]));
     setDeals((cur) => cur.map((d) => (dealIds.includes(d.id) ? { ...d, ...patch } : d)));
+    if (stage?.is_won && dealIds.some((id) => prevStatusById.get(id) !== 'won')) playWinSound();
     const supabase = getSupabase();
     const { error: err } = await supabase.from('deals').update(patch).in('id', dealIds);
     if (err) {
@@ -360,11 +367,13 @@ export function usePipeline(): UsePipelineResult {
       await bulkMoveStage(dealIds, wonStage.id);
       return;
     }
+    const prevStatusById = new Map(deals.map((d) => [d.id, d.status]));
     setDeals((cur) => cur.map((d) => (dealIds.includes(d.id) ? { ...d, status: 'won', temperature: 'Morno' } : d)));
+    if (dealIds.some((id) => prevStatusById.get(id) !== 'won')) playWinSound();
     const supabase = getSupabase();
     const { error: err } = await supabase.from('deals').update({ status: 'won', temperature: 'Morno' }).in('id', dealIds);
     if (err) setError(err.message);
-  }, [stages, bulkMoveStage]);
+  }, [stages, deals, bulkMoveStage]);
 
   // Reabrir em massa: volta pro status 'open' um negócio marcado como
   // ganho/perdido (mesma regra do "Reabrir" individual do DealDrawer) — não
