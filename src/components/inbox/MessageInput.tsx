@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react';
 import { toast } from 'sonner';
-import { Clock, FileText, Loader2, MessageSquareText, Mic, Paperclip, Send, Square, StickyNote, X } from 'lucide-react';
+import { Clock, FileText, Heart, Loader2, MessageSquareText, Mic, Paperclip, Send, Square, StickyNote, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getSupabase } from '@/lib/supabase';
 import type { SendResult } from '@/hooks/useMessages';
 import { useScripts } from '@/hooks/useScripts';
+import { useQuickReplies } from '@/hooks/useQuickReplies';
 import { renderScriptContent, type ScriptContact } from '@/lib/scriptVariables';
-import type { Script } from '@/types/crm';
+import type { QuickReply, Script } from '@/types/crm';
 import { TemplateRestartDialog } from './TemplateRestartDialog';
 
 interface MessageInputProps {
@@ -29,10 +30,12 @@ export function MessageInput({ conversationId, disabled, withinWindow = true, on
   const [isPrivate, setIsPrivate] = useState(false);
   const [showTemplate, setShowTemplate] = useState(false);
   const [showScripts, setShowScripts] = useState(false);
+  const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [sending, setSending] = useState(false); // só para mídia (upload real bloqueia)
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { scripts } = useScripts();
+  const { quickReplies } = useQuickReplies();
 
   // Gravação de áudio (voice note) via MediaRecorder.
   const [recording, setRecording] = useState(false);
@@ -192,6 +195,14 @@ export function MessageInput({ conversationId, disabled, withinWindow = true, on
     }
   };
 
+  // Resposta rápida: sempre insere no campo de texto (nunca envia sozinha) —
+  // é só um atalho pra não digitar/procurar o texto de novo. Sem variáveis,
+  // sem anexo — diferente de Script.
+  const handleQuickReplySelect = (q: QuickReply) => {
+    setShowQuickReplies(false);
+    setContent((prev) => (prev.trim() ? `${prev}\n${q.content}` : q.content));
+  };
+
   // Texto/nota: OTIMISTA. Limpa o input na hora, o balão aparece imediatamente
   // (dentro do onSendText) e a requisição roda em segundo plano. Não bloqueia o
   // campo — o operador já pode digitar a próxima mensagem.
@@ -315,7 +326,7 @@ export function MessageInput({ conversationId, disabled, withinWindow = true, on
           disabled={disabled || sending}
         />
         {!isPrivate && !recording && (
-          <>
+          <div className="flex items-end gap-4">
             <Button
               type="button"
               variant="ghost"
@@ -391,7 +402,56 @@ export function MessageInput({ conversationId, disabled, withinWindow = true, on
                 </div>
               )}
             </div>
-          </>
+            <div className="relative">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowQuickReplies((v) => !v)}
+                disabled={disabled || sending}
+                aria-label="Resposta rápida"
+                title="Inserir resposta rápida (atalho)"
+              >
+                <Heart className="h-4 w-4" />
+              </Button>
+              {showQuickReplies && (
+                <div className="absolute bottom-full left-0 z-10 mb-2 max-h-72 w-72 overflow-y-auto rounded-lg glass-card p-2 shadow-xl">
+                  <div className="mb-1 flex items-center justify-between px-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+                      Respostas rápidas
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowQuickReplies(false)}
+                      className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                      aria-label="Fechar"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  {quickReplies.length === 0 ? (
+                    <div className="px-2 py-2 text-xs text-[var(--color-text-secondary)]">
+                      Nenhuma cadastrada — crie em Configurações → Respostas rápidas.
+                    </div>
+                  ) : (
+                    <div className="space-y-0.5">
+                      {quickReplies.map((q) => (
+                        <button
+                          key={q.id}
+                          type="button"
+                          onClick={() => handleQuickReplySelect(q)}
+                          className="block w-full rounded-md px-2 py-1.5 text-left text-sm text-[var(--color-text-primary)] hover:bg-white/5"
+                        >
+                          <div className="font-medium">{q.title}</div>
+                          <div className="truncate text-xs text-[var(--color-text-secondary)]">{q.content}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         )}
         {recording && (
           <div className="flex flex-1 items-center gap-3 rounded-lg border border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.06)] px-3 py-2">

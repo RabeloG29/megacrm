@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useMemo, useState } from 'react';
 import {
+  Heart,
   MessageSquareText,
   MessagesSquare,
   Package,
@@ -18,6 +19,7 @@ import { ChannelsSettings } from './sections/ChannelsSettings';
 import { ProductsSettings } from './sections/ProductsSettings';
 import { LossReasonsSettings } from './sections/LossReasonsSettings';
 import { ScriptsSettings } from './sections/ScriptsSettings';
+import { QuickRepliesSettings } from './sections/QuickRepliesSettings';
 
 type TabId =
   | 'account'
@@ -25,7 +27,8 @@ type TabId =
   | 'channels'
   | 'products'
   | 'loss_reasons'
-  | 'scripts';
+  | 'scripts'
+  | 'quick_replies';
 
 interface TabDef {
   id: TabId;
@@ -93,6 +96,13 @@ export default function SettingsPage() {
             icon: MessageSquareText,
             adminOnly: true,
             render: () => <ScriptsSettings />,
+          },
+          {
+            id: 'quick_replies',
+            label: 'Respostas rápidas',
+            hint: 'Atalhos do Inbox',
+            icon: Heart,
+            render: () => <QuickRepliesSettings />,
           },
         ] as TabDef[]
       ).filter((t) => !t.adminOnly || role === 'admin'),

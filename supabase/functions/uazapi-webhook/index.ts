@@ -27,6 +27,7 @@ import {
 } from '../_shared/channels.ts';
 import { uazapiContextFromChannel, uazapiGetChatDetails } from '../_shared/uazapi.ts';
 import { maybeAddLeadToFunnel } from '../_shared/funnel.ts';
+import { brPhoneVariants, canonicalBrPhone } from '../_shared/br-phone.ts';
 
 function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -93,16 +94,26 @@ async function findOrCreateContact(
   phone: string,
   name: string | null,
 ): Promise<ContactRow | null> {
-  const { data: existing } = await admin
+  // Busca por todas as variações plausíveis (com/sem o "9" extra do celular
+  // BR) — evita criar um SEGUNDO contato/conversa pra quem já existe no CRM
+  // só porque o JID do WhatsApp veio no formato antigo. Em caso de mais de
+  // uma linha (duplicata antiga já existente), prefere a mais antiga.
+  const variants = brPhoneVariants(phone);
+  const { data: existingRows } = await admin
     .from('contacts')
     .select('id, profile_pic_updated_at')
     .eq('org_id', orgId)
-    .eq('phone', phone)
-    .maybeSingle();
+    .in('phone', variants)
+    .order('created_at', { ascending: true })
+    .limit(1);
+  const existing = (existingRows ?? [])[0];
   if (existing) return existing as ContactRow;
+  // Contato novo: grava sempre na forma canônica (com o 9º dígito), mesma
+  // convenção do normalizePhone do frontend — mantém consistência pro
+  // restante do CRM.
   const { data: created, error } = await admin
     .from('contacts')
-    .insert({ org_id: orgId, phone, name, source: 'whatsapp' })
+    .insert({ org_id: orgId, phone: canonicalBrPhone(phone), name, source: 'whatsapp' })
     .select('id, profile_pic_updated_at')
     .single();
   if (error) return null;

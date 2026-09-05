@@ -88,6 +88,15 @@ export interface Script {
   pdf_path: string | null;
 }
 
+// Quick Reply (resposta rápida) — atalho simples de texto no composer do
+// Inbox (ícone de coração). Diferente de Script: sem anexos, qualquer membro
+// da org pode cadastrar, pensado pra uso rápido no dia a dia (ex.: "Preço").
+export interface QuickReply {
+  id: string;
+  title: string;
+  content: string;
+}
+
 // Produto associado a um deal, com valor/quantidade da compra (linha de
 // deal_products). Preenchido na venda; adição manual fica com value null.
 export interface DealProduct {

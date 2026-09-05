@@ -28,6 +28,7 @@ import { jsonResponse, preflight } from '../_shared/cors.ts';
 import { getNumberInfo, loadZernioContext } from '../_shared/zernio.ts';
 import { getChannelByZernioAccount, type ChannelRow } from '../_shared/channels.ts';
 import { maybeAddLeadToFunnel } from '../_shared/funnel.ts';
+import { brPhoneVariants, canonicalBrPhone } from '../_shared/br-phone.ts';
 
 type DeliveryStatus = 'sent' | 'delivered' | 'read' | 'failed';
 
@@ -112,16 +113,23 @@ async function findOrCreateContact(
   phone: string,
   name: string | null,
 ): Promise<string | null> {
-  const { data: existing } = await admin
+  // Busca por todas as variações plausíveis (com/sem o "9" extra do celular
+  // BR) — evita criar um SEGUNDO contato/conversa pra quem já existe no CRM
+  // só por causa do formato do número recebido. Em caso de duplicata antiga,
+  // prefere a mais antiga.
+  const variants = brPhoneVariants(phone);
+  const { data: existingRows } = await admin
     .from('contacts')
     .select('id')
     .eq('org_id', orgId)
-    .eq('phone', phone)
-    .maybeSingle();
+    .in('phone', variants)
+    .order('created_at', { ascending: true })
+    .limit(1);
+  const existing = (existingRows ?? [])[0];
   if (existing) return (existing as { id: string }).id;
   const { data: created, error } = await admin
     .from('contacts')
-    .insert({ org_id: orgId, phone, name, source: 'whatsapp' })
+    .insert({ org_id: orgId, phone: canonicalBrPhone(phone), name, source: 'whatsapp' })
     .select('id')
     .single();
   if (error) return null;
