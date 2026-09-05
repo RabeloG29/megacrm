@@ -11,6 +11,7 @@ const LoginPage = lazy(() => import('./routes/auth/LoginPage'));
 const SignupPage = lazy(() => import('./routes/auth/SignupPage'));
 const InvitePage = lazy(() => import('./routes/invite/InvitePage'));
 const DashboardPage = lazy(() => import('./routes/dashboard/DashboardPage'));
+const IndicadoresPage = lazy(() => import('./routes/indicadores/IndicadoresPage'));
 const InboxPage = lazy(() => import('./routes/inbox/InboxPage'));
 const CampaignsPage = lazy(() => import('./routes/campaigns/CampaignsPage'));
 const CalendarPage = lazy(() => import('./routes/calendar/CalendarPage'));
@@ -153,6 +154,7 @@ export function AppRouter() {
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<AdminOnly><DashboardPage /></AdminOnly>} />
+          <Route path="/indicadores" element={<AdminOnly><IndicadoresPage /></AdminOnly>} />
           <Route path="/inbox" element={<InboxPage />} />
           <Route path="/campaigns" element={<CampaignsPage />} />
           <Route path="/calendario" element={<CalendarPage />} />

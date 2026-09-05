@@ -10,6 +10,7 @@ import {
   Building2,
   CalendarDays,
   GraduationCap,
+  BarChart3,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -33,6 +34,7 @@ export interface NavItem {
 // aba dentro de /campaigns (Módulo 1).
 export const NAV_ITEMS: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, adminOnly: true },
+  { to: '/indicadores', label: 'Indicadores', icon: BarChart3, adminOnly: true },
   { to: '/inbox', label: 'Inbox', icon: Inbox },
   { to: '/funil', label: 'Funil', icon: KanbanSquare, adminOnly: true },
   { to: '/contacts', label: 'Contatos', icon: Users },
