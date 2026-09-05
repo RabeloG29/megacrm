@@ -6,6 +6,7 @@ import {
   Check,
   GitBranchPlus,
   Loader2,
+  RotateCcw,
   ThumbsDown,
   ThumbsUp,
   Trash2,
@@ -28,6 +29,7 @@ interface BulkActionBarProps {
   onMoveStage: (stageId: string) => Promise<void>;
   onMarkWon: () => Promise<void>;
   onMarkLost: (reason: string | null) => Promise<void>;
+  onReopen: () => Promise<void>;
   onArchive: () => Promise<void>;
   onDelete: () => Promise<{ ok: boolean; error?: string }>;
   onMoveToPipeline: (pipelineId: string, stageId: string) => Promise<{ ok: boolean; error?: string }>;
@@ -36,7 +38,8 @@ interface BulkActionBarProps {
 // Barra flutuante de ações em massa — aparece quando 1+ negócios estão
 // selecionados no board do funil (checkboxes nos cards + "selecionar todos"
 // no cabeçalho da etapa). Cobre: ganho, perdido (com motivo do catálogo),
-// mudar de etapa, mudar de funil, arquivar e excluir.
+// reabrir (volta pra 'open'), mudar de etapa, mudar de funil, arquivar e
+// excluir.
 export function BulkActionBar({
   count,
   stages,
@@ -46,6 +49,7 @@ export function BulkActionBar({
   onMoveStage,
   onMarkWon,
   onMarkLost,
+  onReopen,
   onArchive,
   onDelete,
   onMoveToPipeline,
@@ -98,6 +102,15 @@ export function BulkActionBar({
             />
           )}
         </div>
+
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={busy !== null}
+          onClick={() => void run('reopen', onReopen)}
+        >
+          {busy === 'reopen' ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />} Reabrir
+        </Button>
 
         <div className="relative">
           <Button

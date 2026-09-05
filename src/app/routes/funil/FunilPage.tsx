@@ -33,7 +33,7 @@ export default function FunilPage() {
   const {
     pipelines, selectedId, select, pipeline, stages, deals, nextActionByDeal, convByContact,
     loading, error, reload, moveDeal, createDeal, archiveDeal, unarchiveDeal,
-    bulkMoveStage, bulkMarkWon, bulkMarkLost, bulkArchive, bulkDelete, bulkMoveToPipeline,
+    bulkMoveStage, bulkMarkWon, bulkMarkLost, bulkReopen, bulkArchive, bulkDelete, bulkMoveToPipeline,
   } = funil;
   const { role, userId } = useAppUser();
   const { products } = useProducts();
@@ -410,6 +410,7 @@ export default function FunilPage() {
         onMoveStage={async (stageId) => { await bulkMoveStage([...selectedIds], stageId); clearSelection(); }}
         onMarkWon={async () => { await bulkMarkWon([...selectedIds]); clearSelection(); }}
         onMarkLost={async (reason) => { await bulkMarkLost([...selectedIds], reason); clearSelection(); }}
+        onReopen={async () => { await bulkReopen([...selectedIds]); clearSelection(); }}
         onArchive={async () => { await bulkArchive([...selectedIds]); clearSelection(); }}
         onDelete={async () => { const res = await bulkDelete([...selectedIds]); clearSelection(); return res; }}
         onMoveToPipeline={async (pipelineId, stageId) => {

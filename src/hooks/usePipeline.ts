@@ -53,6 +53,7 @@ interface UsePipelineResult {
   bulkMoveStage: (dealIds: string[], stageId: string) => Promise<void>;
   bulkMarkWon: (dealIds: string[]) => Promise<void>;
   bulkMarkLost: (dealIds: string[], reason: string | null) => Promise<void>;
+  bulkReopen: (dealIds: string[]) => Promise<void>;
   bulkArchive: (dealIds: string[]) => Promise<void>;
   bulkDelete: (dealIds: string[]) => Promise<{ ok: boolean; error?: string }>;
   bulkMoveToPipeline: (dealIds: string[], pipelineId: string, stageId: string) => Promise<{ ok: boolean; error?: string }>;
@@ -365,6 +366,18 @@ export function usePipeline(): UsePipelineResult {
     if (err) setError(err.message);
   }, [stages, bulkMoveStage]);
 
+  // Reabrir em massa: volta pro status 'open' um negócio marcado como
+  // ganho/perdido (mesma regra do "Reabrir" individual do DealDrawer) — não
+  // mexe na etapa nem no motivo de perda, só destrava o negócio pra seguir
+  // sendo trabalhado no funil de novo.
+  const bulkReopen = useCallback(async (dealIds: string[]) => {
+    if (dealIds.length === 0) return;
+    setDeals((cur) => cur.map((d) => (dealIds.includes(d.id) ? { ...d, status: 'open' } : d)));
+    const supabase = getSupabase();
+    const { error: err } = await supabase.from('deals').update({ status: 'open' }).in('id', dealIds);
+    if (err) setError(err.message);
+  }, []);
+
   // Perdido em massa: grava o motivo (catálogo de Configurações → Motivos de
   // perda, ou texto livre) e move para a etapa "Perdido", se existir.
   const bulkMarkLost = useCallback(async (dealIds: string[], reason: string | null) => {
@@ -571,7 +584,7 @@ export function usePipeline(): UsePipelineResult {
   return {
     pipelines, selectedId, select, pipeline, stages, deals, nextActionByDeal, convByContact, loading, error, reload,
     moveDeal, createDeal, archiveDeal, unarchiveDeal,
-    bulkMoveStage, bulkMarkWon, bulkMarkLost, bulkArchive, bulkDelete, bulkMoveToPipeline,
+    bulkMoveStage, bulkMarkWon, bulkMarkLost, bulkReopen, bulkArchive, bulkDelete, bulkMoveToPipeline,
     createPipeline, renamePipeline, deletePipeline, setDefaultPipeline,
     addStage, renameStage, setStageColor, setStageProbability, setStageAiCriteria, reorderStages, removeStage,
   };
