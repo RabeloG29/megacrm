@@ -9,15 +9,16 @@ import { ArrowUpDown, ChevronDown, Filter, X } from 'lucide-react';
 import { getSupabase } from '@/lib/supabase';
 import type { Tag } from '@/types/crm';
 import {
-  EMPTY_FILTERS, FUNIL_SORT_LABEL,
-  type FunilFilterState, type FunilSort,
+  EMPTY_FILTERS, FUNIL_SORT_LABEL, LEAD_STATUS_LABEL,
+  type FunilFilterState, type FunilSort, type LeadStatusFilter,
   countActiveFilters,
 } from './funilFilterLogic';
 
 export {
   applyFunilFilters, countActiveFilters, sortFunilDeals, EMPTY_FILTERS, FUNIL_SORT_LABEL,
+  matchesLeadStatus, LEAD_STATUS_LABEL,
 } from './funilFilterLogic';
-export type { FunilFilterState, FunilSort, ContactConvInfo } from './funilFilterLogic';
+export type { FunilFilterState, FunilSort, LeadStatusFilter, ContactConvInfo } from './funilFilterLogic';
 
 // ---- UI ---------------------------------------------------------------------
 
@@ -92,12 +93,14 @@ function MultiSelect({
 }
 
 export function FunilFilters({
-  filters, onChange, sort, onSortChange,
+  filters, onChange, sort, onSortChange, leadStatus, onLeadStatusChange,
 }: {
   filters: FunilFilterState;
   onChange: (f: FunilFilterState) => void;
   sort: FunilSort;
   onSortChange: (s: FunilSort) => void;
+  leadStatus: LeadStatusFilter;
+  onLeadStatusChange: (s: LeadStatusFilter) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -138,6 +141,22 @@ export function FunilFilters({
           >
             {(Object.keys(FUNIL_SORT_LABEL) as FunilSort[]).map((s) => (
               <option key={s} value={s}>{FUNIL_SORT_LABEL[s]}</option>
+            ))}
+          </select>
+        </label>
+
+        {/* Status do lead: Abertos (default, oculta ganhos/perdidos do board
+            ativo) / Ganhos / Perdidos — perdidos aparecem na etapa em que
+            foram marcados como perdidos. */}
+        <label className="inline-flex items-center gap-2 rounded-lg border border-[rgba(22,163,74,0.25)] px-3 py-2 text-sm text-[var(--color-text-primary)] transition hover:border-[var(--accent-primary)]">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">Status lead</span>
+          <select
+            value={leadStatus}
+            onChange={(e) => onLeadStatusChange(e.target.value as LeadStatusFilter)}
+            className="bg-transparent text-sm text-[var(--color-text-primary)] outline-none [&>option]:bg-[#F3FBF6]"
+          >
+            {(Object.keys(LEAD_STATUS_LABEL) as LeadStatusFilter[]).map((s) => (
+              <option key={s} value={s}>{LEAD_STATUS_LABEL[s]}</option>
             ))}
           </select>
         </label>

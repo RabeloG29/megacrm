@@ -13,7 +13,7 @@ import { LoadErrorBanner } from '@/components/LoadErrorBanner';
 import { DealDrawer } from '@/components/funil/DealDrawer';
 import { FunilManager } from '@/components/funil/FunilManager';
 import { BulkActionBar } from '@/components/funil/BulkActionBar';
-import { applyFunilFilters, EMPTY_FILTERS, FunilFilters, sortFunilDeals, type FunilFilterState, type FunilSort } from '@/components/funil/FunilFilters';
+import { applyFunilFilters, EMPTY_FILTERS, FunilFilters, matchesLeadStatus, sortFunilDeals, type FunilFilterState, type FunilSort, type LeadStatusFilter } from '@/components/funil/FunilFilters';
 import { DUE_TONE_STYLE, dueTone, getDealOrigin, TEMPERATURE_STYLE, TRAFFIC_TYPE_STYLE, type ContactLite, type Deal, type Product, type Stage, type Tag } from '@/types/crm';
 
 const fmtDueShort = (s: string) =>
@@ -49,6 +49,9 @@ export default function FunilPage() {
   const [archivedOpen, setArchivedOpen] = useState(false);
   const [filters, setFilters] = useState<FunilFilterState>(EMPTY_FILTERS);
   const [sort, setSort] = useState<FunilSort>('recente');
+  // Aberto (default) oculta ganhos/perdidos do board ativo; Ganhos/Perdidos
+  // mostram só o status escolhido, cada um na etapa onde está hoje.
+  const [leadStatus, setLeadStatus] = useState<LeadStatusFilter>('aberto');
   const [visibleByStage, setVisibleByStage] = useState<Record<string, number>>({});
   // Seleção múltipla (ações em massa): ids de negócios marcados no board.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -175,15 +178,18 @@ export default function FunilPage() {
   useEffect(() => {
     setVisibleByStage({});
     setSelectedIds(new Set());
-  }, [selectedId, filters, sort]);
+  }, [selectedId, filters, sort, leadStatus]);
 
   const archivedDeals = useMemo(() => deals.filter((d) => d.archived_at), [deals]);
   const boardDeals = useMemo(
     () => sortFunilDeals(
-      applyFunilFilters(deals.filter((d) => !d.archived_at), filters, nextActionByDeal, convByContact),
+      applyFunilFilters(
+        deals.filter((d) => !d.archived_at && matchesLeadStatus(d, leadStatus)),
+        filters, nextActionByDeal, convByContact,
+      ),
       sort,
     ),
-    [deals, filters, nextActionByDeal, convByContact, sort],
+    [deals, filters, nextActionByDeal, convByContact, sort, leadStatus],
   );
 
   const totalPipeline = useMemo(
@@ -265,7 +271,14 @@ export default function FunilPage() {
         </div>
       </div>
 
-      <FunilFilters filters={filters} onChange={setFilters} sort={sort} onSortChange={setSort} />
+      <FunilFilters
+        filters={filters}
+        onChange={setFilters}
+        sort={sort}
+        onSortChange={setSort}
+        leadStatus={leadStatus}
+        onLeadStatusChange={setLeadStatus}
+      />
 
       {error && <LoadErrorBanner message={error} onRetry={() => void reload()} />}
 
