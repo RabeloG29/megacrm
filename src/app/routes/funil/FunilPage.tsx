@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Archive, ArchiveRestore, CheckSquare, ChevronDown, Clock, GitBranchPlus, ListChecks, MessageCircle, Plus, RefreshCw, Settings2, Square, X } from 'lucide-react';
 import { getSupabase } from '@/lib/supabase';
@@ -35,7 +35,7 @@ export default function FunilPage() {
     loading, error, reload, moveDeal, createDeal, archiveDeal, unarchiveDeal,
     bulkMoveStage, bulkMarkWon, bulkMarkLost, bulkArchive, bulkDelete, bulkMoveToPipeline,
   } = funil;
-  const { role } = useAppUser();
+  const { role, userId } = useAppUser();
   const { products } = useProducts();
   const { tags: tagCatalog } = useTags();
   const { create: createContact } = useContacts();
@@ -91,6 +91,54 @@ export default function FunilPage() {
       .limit(500)
       .then(({ data }) => setContacts((data ?? []) as ContactLite[]));
   }, []);
+
+  // Ícone de WhatsApp no card: lead que nunca conversou ainda não tem linha
+  // em conversations — cria na hora (atribuída a quem clicou, IA pausada, sem
+  // status "ai_active" pra IA não assumir a primeira resposta do contato) e
+  // devolve o id pra já abrir a thread pronta pra mandar a 1ª mensagem.
+  // Usa o mesmo canal/provider (uazapi x zernio) dos números já configurados,
+  // senão a conversa nasce com o provider 'zernio' (default da coluna) e pode
+  // cair na trava de janela de 24h da Meta sem nunca ter tido inbound.
+  const startConversation = async (contactId: string): Promise<string | null> => {
+    const supabase = getSupabase();
+    const { data: activeChannels } = await supabase
+      .from('channels')
+      .select('id, provider')
+      .eq('is_active', true)
+      .order('created_at', { ascending: true });
+    // Prioriza um número UAZAPI (sem trava de janela de 24h) sobre a API
+    // oficial da Meta — pro operador conseguir mandar a 1ª mensagem na hora,
+    // mesmo sem nenhum inbound ainda.
+    const channels = (activeChannels ?? []) as Array<{ id: string; provider: string }>;
+    const channel = channels.find((c) => c.provider === 'uazapi') ?? channels[0] ?? null;
+    const { data, error: err } = await supabase
+      .from('conversations')
+      .insert({
+        contact_id: contactId,
+        status: 'human_active',
+        ai_paused: true,
+        assigned_to: userId,
+        channel_id: channel?.id ?? null,
+        ...(channel?.provider ? { provider: channel.provider } : {}),
+      })
+      .select('id')
+      .single();
+    if (err) {
+      // Corrida: já existe conversa pra esse contato (ex.: acabou de chegar
+      // mensagem inbound) — busca a existente em vez de falhar.
+      if (err.message.toLowerCase().includes('duplicate key')) {
+        const { data: existing } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('contact_id', contactId)
+          .maybeSingle();
+        return (existing as { id: string } | null)?.id ?? null;
+      }
+      toast.error('Falha ao iniciar conversa', { description: err.message });
+      return null;
+    }
+    return (data as { id: string }).id;
+  };
 
   // "+ Novo lead" dentro do form de criar negócio: cadastra o contato na hora
   // (nome + telefone obrigatórios) e já injeta no dropdown de contatos local.
@@ -287,6 +335,8 @@ export default function FunilPage() {
                       key={deal.id}
                       deal={deal}
                       nextDue={nextActionByDeal[deal.id] ?? null}
+                      hasConversation={Boolean(convByContact[deal.contact_id]?.length)}
+                      onStartConversation={startConversation}
                       selected={selectedIds.has(deal.id)}
                       onToggleSelect={() => toggleSelect(deal.id)}
                       onDragStart={() => setDragId(deal.id)}
@@ -492,6 +542,8 @@ function ArchivedPanel({
 function DealCard({
   deal,
   nextDue,
+  hasConversation,
+  onStartConversation,
   selected,
   onToggleSelect,
   onDragStart,
@@ -500,6 +552,8 @@ function DealCard({
 }: {
   deal: Deal;
   nextDue: string | null;
+  hasConversation: boolean;
+  onStartConversation: (contactId: string) => Promise<string | null>;
   selected: boolean;
   onToggleSelect: () => void;
   onDragStart: () => void;
@@ -507,6 +561,8 @@ function DealCard({
   onArchive: () => void;
 }) {
   const draggedRef = useRef(false);
+  const navigate = useNavigate();
+  const [openingChat, setOpeningChat] = useState(false);
   const leadName = deal.contact?.name?.trim() || deal.contact?.phone || 'Sem nome';
   const temp = TEMPERATURE_STYLE[deal.temperature];
   const origin = getDealOrigin(deal);
@@ -560,18 +616,30 @@ function DealCard({
         )}
       </div>
       {/* WhatsApp + Arquivar: overlay absoluto no canto inferior direito, só
-          no hover — fora do fluxo, não desloca nenhum badge. Abre a conversa
-          do lead direto no Inbox do CRM (mesmo deep-link ?contact= usado no
-          drawer do negócio) — nunca sai pro WhatsApp Web/app externo. */}
-      <Link
-        to={`/inbox?contact=${deal.contact_id}`}
-        onClick={(e) => e.stopPropagation()}
+          no hover — fora do fluxo, não desloca nenhum badge. Sempre abre
+          dentro do Inbox do CRM: com conversa já registrada, vai direto nela;
+          sem conversa ainda, cria uma na hora (startConversation) e só então
+          navega — nunca sai pro WhatsApp Web/app externo. */}
+      <button
+        type="button"
+        disabled={openingChat}
+        onClick={async (e) => {
+          e.stopPropagation();
+          if (hasConversation) {
+            navigate(`/inbox?contact=${deal.contact_id}`);
+            return;
+          }
+          setOpeningChat(true);
+          const conversationId = await onStartConversation(deal.contact_id);
+          setOpeningChat(false);
+          if (conversationId) navigate(`/inbox?conversation=${conversationId}`);
+        }}
         title="Abrir conversa no Inbox"
-        className="absolute bottom-2 right-9 rounded-md border border-[rgba(22,163,74,0.25)] p-1 text-[var(--color-text-secondary)] opacity-0 transition group-hover:opacity-100 hover:bg-[rgba(22,163,74,0.12)] hover:text-[var(--accent-primary)]"
+        className="absolute bottom-2 right-9 rounded-md border border-[rgba(22,163,74,0.25)] p-1 text-[var(--color-text-secondary)] opacity-0 transition group-hover:opacity-100 hover:bg-[rgba(22,163,74,0.12)] hover:text-[var(--accent-primary)] disabled:opacity-60"
         style={{ background: '#FFFFFF' }}
       >
         <MessageCircle className="h-3.5 w-3.5" />
-      </Link>
+      </button>
       <button
         onClick={(e) => { e.stopPropagation(); onArchive(); }}
         title="Arquivar negócio"
