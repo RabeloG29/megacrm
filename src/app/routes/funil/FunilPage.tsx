@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Archive, ArchiveRestore, CheckSquare, ChevronDown, Clock, GitBranchPlus, ListChecks, MessageCircle, Plus, RefreshCw, Settings2, Square, X } from 'lucide-react';
 import { getSupabase } from '@/lib/supabase';
@@ -508,9 +508,6 @@ function DealCard({
 }) {
   const draggedRef = useRef(false);
   const leadName = deal.contact?.name?.trim() || deal.contact?.phone || 'Sem nome';
-  // Abre o WhatsApp direto no número do lead (wa.me), mesmo sem conversa
-  // registrada no Inbox — não depende de já existir uma thread aqui.
-  const whatsappHref = deal.contact?.phone ? `https://wa.me/${deal.contact.phone.replace(/\D/g, '')}` : null;
   const temp = TEMPERATURE_STYLE[deal.temperature];
   const origin = getDealOrigin(deal);
   // Subtítulo minimizado: 1º produto comprado (+ "e outros" se houver mais);
@@ -563,20 +560,18 @@ function DealCard({
         )}
       </div>
       {/* WhatsApp + Arquivar: overlay absoluto no canto inferior direito, só
-          no hover — fora do fluxo, não desloca nenhum badge. */}
-      {whatsappHref && (
-        <a
-          href={whatsappHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          title="Abrir conversa no WhatsApp"
-          className="absolute bottom-2 right-9 rounded-md border border-[rgba(22,163,74,0.25)] p-1 text-[var(--color-text-secondary)] opacity-0 transition group-hover:opacity-100 hover:bg-[rgba(22,163,74,0.12)] hover:text-[var(--accent-primary)]"
-          style={{ background: '#FFFFFF' }}
-        >
-          <MessageCircle className="h-3.5 w-3.5" />
-        </a>
-      )}
+          no hover — fora do fluxo, não desloca nenhum badge. Abre a conversa
+          do lead direto no Inbox do CRM (mesmo deep-link ?contact= usado no
+          drawer do negócio) — nunca sai pro WhatsApp Web/app externo. */}
+      <Link
+        to={`/inbox?contact=${deal.contact_id}`}
+        onClick={(e) => e.stopPropagation()}
+        title="Abrir conversa no Inbox"
+        className="absolute bottom-2 right-9 rounded-md border border-[rgba(22,163,74,0.25)] p-1 text-[var(--color-text-secondary)] opacity-0 transition group-hover:opacity-100 hover:bg-[rgba(22,163,74,0.12)] hover:text-[var(--accent-primary)]"
+        style={{ background: '#FFFFFF' }}
+      >
+        <MessageCircle className="h-3.5 w-3.5" />
+      </Link>
       <button
         onClick={(e) => { e.stopPropagation(); onArchive(); }}
         title="Arquivar negócio"
