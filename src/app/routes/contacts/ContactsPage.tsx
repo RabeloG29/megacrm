@@ -364,6 +364,9 @@ export default function ContactsPage() {
                     </span>
                   )}
                   {c.traffic_type && <span>{TRAFFIC_LABEL[c.traffic_type] ?? c.traffic_type}</span>}
+                  {(c.pipeline_name || c.stage_name) && (
+                    <span>{[c.pipeline_name, c.stage_name].filter(Boolean).join(' · ')}</span>
+                  )}
                   <span className="opacity-70">{fmtDate(c.first_seen_at ?? c.created_at)}</span>
                 </div>
                 {c.tags.length > 0 && (
@@ -402,6 +405,8 @@ export default function ContactsPage() {
                 <th className="p-3 text-label">Telefone</th>
                 <th className="p-3 text-label">Canal</th>
                 <th className="p-3 text-label">Origem</th>
+                <th className="p-3 text-label">Funil</th>
+                <th className="p-3 text-label">Etapa</th>
                 <th className="p-3 text-label">Primeiro registro</th>
                 <th className="p-3 text-label">Tags</th>
                 <th className="p-3 w-20" />
@@ -410,13 +415,13 @@ export default function ContactsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-[var(--color-text-secondary)] opacity-60">
+                  <td colSpan={10} className="p-8 text-center text-[var(--color-text-secondary)] opacity-60">
                     Carregando...
                   </td>
                 </tr>
               ) : contacts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-[var(--color-text-secondary)] opacity-60">
+                  <td colSpan={10} className="p-8 text-center text-[var(--color-text-secondary)] opacity-60">
                     {search || tagFilter || sourceFilter || leadTypeFilter
                       ? 'Nenhum contato encontrado com estes filtros.'
                       : 'Nenhum contato ainda — crie um manualmente ou importe CSV/XLSX.'}
@@ -459,6 +464,20 @@ export default function ContactsPage() {
                     <td className="p-3 text-[var(--color-text-secondary)]">
                       {c.traffic_type ? (
                         <span className="text-xs">{TRAFFIC_LABEL[c.traffic_type] ?? c.traffic_type}</span>
+                      ) : (
+                        <span className="opacity-40">—</span>
+                      )}
+                    </td>
+                    <td className="p-3 text-[var(--color-text-secondary)]">
+                      {c.pipeline_name ? (
+                        <span className="text-xs">{c.pipeline_name}</span>
+                      ) : (
+                        <span className="opacity-40">—</span>
+                      )}
+                    </td>
+                    <td className="p-3 text-[var(--color-text-secondary)]">
+                      {c.stage_name ? (
+                        <span className="text-xs">{c.stage_name}</span>
                       ) : (
                         <span className="opacity-40">—</span>
                       )}

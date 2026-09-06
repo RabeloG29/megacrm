@@ -206,21 +206,34 @@ export function useContacts({
       byContact.set(contactId, arr);
     }
 
-    // Origem: traffic_type do deal mais recente de cada contato (coluna Origem).
+    // Origem, funil e etapa: do deal mais recente de cada contato (colunas
+    // Origem, Funil e Etapa). Um contato pode ter vários deals (ex: mais de um
+    // funil) — fica o do deal criado por último, mesmo padrão já usado p/ Origem.
     const { data: dealRows } = await supabase
       .from('deals')
-      .select('contact_id, traffic_type, created_at')
+      .select('contact_id, traffic_type, created_at, pipeline:pipeline_id(name), stage:stage_id(name)')
       .in('contact_id', ids)
       .order('created_at', { ascending: false });
     const trafficByContact = new Map<string, string | null>();
-    for (const d of (dealRows ?? []) as Array<{ contact_id: string; traffic_type: string | null }>) {
+    const pipelineByContact = new Map<string, string | null>();
+    const stageByContact = new Map<string, string | null>();
+    for (const d of (dealRows ?? []) as unknown as Array<{
+      contact_id: string;
+      traffic_type: string | null;
+      pipeline: { name: string } | null;
+      stage: { name: string } | null;
+    }>) {
       if (!trafficByContact.has(d.contact_id)) trafficByContact.set(d.contact_id, d.traffic_type);
+      if (!pipelineByContact.has(d.contact_id)) pipelineByContact.set(d.contact_id, d.pipeline?.name ?? null);
+      if (!stageByContact.has(d.contact_id)) stageByContact.set(d.contact_id, d.stage?.name ?? null);
     }
 
     const merged: ContactWithTags[] = (data ?? []).map((c) => ({
       ...(c as Contact),
       tags: byContact.get(c.id as string) ?? [],
       traffic_type: trafficByContact.get(c.id as string) ?? null,
+      pipeline_name: pipelineByContact.get(c.id as string) ?? null,
+      stage_name: stageByContact.get(c.id as string) ?? null,
     }));
 
     setContacts(merged);

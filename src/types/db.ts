@@ -62,4 +62,7 @@ export interface ContactWithTags extends Contact {
   tags: Tag[];
   // Origem derivada do deal mais recente (Módulo 5): 'organico' | 'pago' | 'manual'.
   traffic_type?: string | null;
+  // Funil e etapa do deal mais recente do contato (colunas Funil/Etapa da lista).
+  pipeline_name?: string | null;
+  stage_name?: string | null;
 }
