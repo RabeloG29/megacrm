@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, Filter, Link2, MapPin, MessageSquare, Plus, X } from 'lucide-react';
+import { ArrowLeft, Filter, Link2, Loader2, MapPin, MessageSquare, Plus, X } from 'lucide-react';
 import { useContactProfile } from '@/hooks/useContactProfile';
 import { useContactTimeline, type DayGroup } from '@/hooks/useContactTimeline';
 import { useContactChannelLinks, type ContactChannelLink } from '@/hooks/useContactChannelLinks';
 import { useOperators } from '@/hooks/useOperators';
+import { useAppUser } from '@/app/providers/AppUserProvider';
+import { ensureConversation } from '@/lib/conversations';
 import { CONTACT_SOURCE_LABEL, getDealOrigin, TRAFFIC_TYPE_STYLE } from '@/types/crm';
 import { LoadErrorBanner } from '@/components/LoadErrorBanner';
 import { AddToPipelineModal } from '@/components/funil/AddToPipelineModal';
@@ -38,8 +40,10 @@ export default function ContactDetailPage() {
   const { groups, addNoteToDay, reload: reloadTimeline } = useContactTimeline(id);
   const channelLinks = useContactChannelLinks(id);
   const { operators } = useOperators();
+  const { userId } = useAppUser();
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [showPipelineModal, setShowPipelineModal] = useState(false);
+  const [openingChat, setOpeningChat] = useState(false);
 
   const authorName = (uid: string | null | undefined) =>
     uid ? operators.find((o) => o.user_id === uid)?.email ?? 'Operador' : 'Sistema';
@@ -65,6 +69,18 @@ export default function ContactDetailPage() {
     const err = await saveContact({ custom_fields: { ...(contact.custom_fields ?? {}), company: value || undefined } });
     if (err) toast.error(err);
     else toast.success('Salvo.');
+  };
+
+  // Contato sem conversa ainda (importado via CSV, cadastrado manualmente)
+  // não tinha linha em `conversations` — o deep-link ?contact= do Inbox só
+  // SELECIONA uma conversa existente, nunca cria. Cria na hora, igual ao
+  // ícone de WhatsApp do card do funil.
+  const handleOpenConversa = async () => {
+    setOpeningChat(true);
+    const conversationId = await ensureConversation(contact.id, userId);
+    setOpeningChat(false);
+    if (conversationId) navigate(`/inbox?conversation=${conversationId}`);
+    else toast.error('Não foi possível abrir a conversa.');
   };
 
   return (
@@ -105,8 +121,8 @@ export default function ContactDetailPage() {
           <Button variant="outline" onClick={() => setShowLinkModal(true)}>
             <Link2 className="h-4 w-4" /> Vincular canal
           </Button>
-          <Button onClick={() => navigate(`/inbox?contact=${contact.id}`)}>
-            <MessageSquare className="h-4 w-4" /> Abrir conversa
+          <Button onClick={() => void handleOpenConversa()} disabled={openingChat}>
+            {openingChat ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4" />} Abrir conversa
           </Button>
         </div>
       </div>
