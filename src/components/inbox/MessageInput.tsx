@@ -170,7 +170,7 @@ export function MessageInput({ conversationId, disabled, withinWindow = true, on
     const rendered = renderScriptContent(s.content, contact);
     setShowScripts(false);
 
-        // Prefere o nome original do arquivo (salvo no cadastro do script). Scripts
+    // Prefere o nome original do arquivo (salvo no cadastro do script). Scripts
     // cadastrados antes dessa coluna existir não têm esse valor — cai no nome
     // extraído da URL do Storage como antes (que hoje é sempre o uuid aleatório
     // do path de upload).
