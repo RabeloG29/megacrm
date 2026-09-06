@@ -14,12 +14,16 @@ interface ScriptInput {
   content: string;
   image_url?: string | null;
   image_path?: string | null;
+  image_filename?: string | null;
   pdf_url?: string | null;
   pdf_path?: string | null;
+  pdf_filename?: string | null;
   video_url?: string | null;
   video_path?: string | null;
+  video_filename?: string | null;
   audio_url?: string | null;
   audio_path?: string | null;
+  audio_filename?: string | null;
 }
 
 interface UseScriptsResult {
@@ -33,7 +37,7 @@ interface UseScriptsResult {
 }
 
 const SCRIPT_COLUMNS =
-  'id, title, content, image_url, image_path, pdf_url, pdf_path, video_url, video_path, audio_url, audio_path';
+  'id, title, content, image_url, image_path, image_filename, pdf_url, pdf_path, pdf_filename, video_url, video_path, video_filename, audio_url, audio_path, audio_filename';
 
 export function useScripts(): UseScriptsResult {
   const { userId } = useAppUser();
@@ -67,12 +71,16 @@ export function useScripts(): UseScriptsResult {
       content: input.content.trim(),
       image_url: input.image_url ?? null,
       image_path: input.image_path ?? null,
+      image_filename: input.image_filename ?? null,
       pdf_url: input.pdf_url ?? null,
       pdf_path: input.pdf_path ?? null,
+      pdf_filename: input.pdf_filename ?? null,
       video_url: input.video_url ?? null,
       video_path: input.video_path ?? null,
+      video_filename: input.video_filename ?? null,
       audio_url: input.audio_url ?? null,
       audio_path: input.audio_path ?? null,
+      audio_filename: input.audio_filename ?? null,
     };
     const { data, error: err } = await supabase
       .from('scripts')
@@ -94,12 +102,16 @@ export function useScripts(): UseScriptsResult {
       ...(patch.content != null ? { content: patch.content.trim() } : {}),
       ...(patch.image_url !== undefined ? { image_url: patch.image_url } : {}),
       ...(patch.image_path !== undefined ? { image_path: patch.image_path } : {}),
+      ...(patch.image_filename !== undefined ? { image_filename: patch.image_filename } : {}),
       ...(patch.pdf_url !== undefined ? { pdf_url: patch.pdf_url } : {}),
       ...(patch.pdf_path !== undefined ? { pdf_path: patch.pdf_path } : {}),
+      ...(patch.pdf_filename !== undefined ? { pdf_filename: patch.pdf_filename } : {}),
       ...(patch.video_url !== undefined ? { video_url: patch.video_url } : {}),
       ...(patch.video_path !== undefined ? { video_path: patch.video_path } : {}),
+      ...(patch.video_filename !== undefined ? { video_filename: patch.video_filename } : {}),
       ...(patch.audio_url !== undefined ? { audio_url: patch.audio_url } : {}),
       ...(patch.audio_path !== undefined ? { audio_path: patch.audio_path } : {}),
+      ...(patch.audio_filename !== undefined ? { audio_filename: patch.audio_filename } : {}),
     };
     const { error: err } = await supabase
       .from('scripts')

@@ -170,11 +170,15 @@ export function MessageInput({ conversationId, disabled, withinWindow = true, on
     const rendered = renderScriptContent(s.content, contact);
     setShowScripts(false);
 
+        // Prefere o nome original do arquivo (salvo no cadastro do script). Scripts
+    // cadastrados antes dessa coluna existir não têm esse valor — cai no nome
+    // extraído da URL do Storage como antes (que hoje é sempre o uuid aleatório
+    // do path de upload).
     const attachments: { url: string; filename: string }[] = [];
-    if (s.image_url) attachments.push({ url: s.image_url, filename: filenameFromUrl(s.image_url, 'imagem.jpg') });
-    if (s.pdf_url) attachments.push({ url: s.pdf_url, filename: filenameFromUrl(s.pdf_url, 'documento.pdf') });
-    if (s.video_url) attachments.push({ url: s.video_url, filename: filenameFromUrl(s.video_url, 'video.mp4') });
-    if (s.audio_url) attachments.push({ url: s.audio_url, filename: filenameFromUrl(s.audio_url, 'audio.mp3') });
+    if (s.image_url) attachments.push({ url: s.image_url, filename: s.image_filename || filenameFromUrl(s.image_url, 'imagem.jpg') });
+    if (s.pdf_url) attachments.push({ url: s.pdf_url, filename: s.pdf_filename || filenameFromUrl(s.pdf_url, 'documento.pdf') });
+    if (s.video_url) attachments.push({ url: s.video_url, filename: s.video_filename || filenameFromUrl(s.video_url, 'video.mp4') });
+    if (s.audio_url) attachments.push({ url: s.audio_url, filename: s.audio_filename || filenameFromUrl(s.audio_url, 'audio.mp3') });
 
     if (attachments.length === 0) {
       setContent((prev) => (prev.trim() ? `${prev}\n${rendered}` : rendered));

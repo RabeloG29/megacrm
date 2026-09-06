@@ -55,12 +55,16 @@ export function ScriptsSettings() {
   const [editAudioFile, setEditAudioFile] = useState<File | null>(null);
   const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
   const [editImagePath, setEditImagePath] = useState<string | null>(null);
+  const [editImageFilename, setEditImageFilename] = useState<string | null>(null);
   const [editPdfUrl, setEditPdfUrl] = useState<string | null>(null);
   const [editPdfPath, setEditPdfPath] = useState<string | null>(null);
+  const [editPdfFilename, setEditPdfFilename] = useState<string | null>(null);
   const [editVideoUrl, setEditVideoUrl] = useState<string | null>(null);
   const [editVideoPath, setEditVideoPath] = useState<string | null>(null);
+  const [editVideoFilename, setEditVideoFilename] = useState<string | null>(null);
   const [editAudioUrl, setEditAudioUrl] = useState<string | null>(null);
   const [editAudioPath, setEditAudioPath] = useState<string | null>(null);
+  const [editAudioFilename, setEditAudioFilename] = useState<string | null>(null);
   const editImageInputRef = useRef<HTMLInputElement>(null);
   const editPdfInputRef = useRef<HTMLInputElement>(null);
   const editVideoInputRef = useRef<HTMLInputElement>(null);
@@ -134,43 +138,55 @@ export function ScriptsSettings() {
     try {
       let imageUrl: string | null = null;
       let imagePath: string | null = null;
+      let imageFilename: string | null = null;
       let pdfUrl: string | null = null;
       let pdfPath: string | null = null;
+      let pdfFilename: string | null = null;
       let videoUrl: string | null = null;
       let videoPath: string | null = null;
+      let videoFilename: string | null = null;
       let audioUrl: string | null = null;
       let audioPath: string | null = null;
+      let audioFilename: string | null = null;
       if (imageFile) {
         const uploaded = await uploadAttachment(imageFile, orgId);
         imageUrl = uploaded.url;
         imagePath = uploaded.path;
+        imageFilename = imageFile.name;
       }
       if (pdfFile) {
         const uploaded = await uploadAttachment(pdfFile, orgId);
         pdfUrl = uploaded.url;
         pdfPath = uploaded.path;
+        pdfFilename = pdfFile.name;
       }
       if (videoFile) {
         const uploaded = await uploadAttachment(videoFile, orgId);
         videoUrl = uploaded.url;
         videoPath = uploaded.path;
+        videoFilename = videoFile.name;
       }
       if (audioFile) {
         const uploaded = await uploadAttachment(audioFile, orgId);
         audioUrl = uploaded.url;
         audioPath = uploaded.path;
+        audioFilename = audioFile.name;
       }
       await create({
         title,
         content,
         image_url: imageUrl,
         image_path: imagePath,
+        image_filename: imageFilename,
         pdf_url: pdfUrl,
         pdf_path: pdfPath,
+        pdf_filename: pdfFilename,
         video_url: videoUrl,
         video_path: videoPath,
+        video_filename: videoFilename,
         audio_url: audioUrl,
         audio_path: audioPath,
+        audio_filename: audioFilename,
       });
       toast.success('Script cadastrado.');
       setTitle('');
@@ -200,12 +216,16 @@ export function ScriptsSettings() {
     setEditAudioFile(null);
     setEditImageUrl(s.image_url);
     setEditImagePath(s.image_path);
+    setEditImageFilename(s.image_filename);
     setEditPdfUrl(s.pdf_url);
     setEditPdfPath(s.pdf_path);
+    setEditPdfFilename(s.pdf_filename);
     setEditVideoUrl(s.video_url);
     setEditVideoPath(s.video_path);
+    setEditVideoFilename(s.video_filename);
     setEditAudioUrl(s.audio_url);
     setEditAudioPath(s.audio_path);
+    setEditAudioFilename(s.audio_filename);
     if (editImageInputRef.current) editImageInputRef.current.value = '';
     if (editPdfInputRef.current) editPdfInputRef.current.value = '';
     if (editVideoInputRef.current) editVideoInputRef.current.value = '';
@@ -222,50 +242,62 @@ export function ScriptsSettings() {
     try {
       let imageUrl = editImageUrl;
       let imagePath = editImagePath;
+      let imageFilename = editImageFilename;
       if (editImageFile) {
         const uploaded = await uploadAttachment(editImageFile, orgId);
         await removeStoragePath(editImagePath);
         imageUrl = uploaded.url;
         imagePath = uploaded.path;
+        imageFilename = editImageFile.name;
       } else if (editImageUrl === null && editImagePath) {
         await removeStoragePath(editImagePath);
         imagePath = null;
+        imageFilename = null;
       }
 
       let pdfUrl = editPdfUrl;
       let pdfPath = editPdfPath;
+      let pdfFilename = editPdfFilename;
       if (editPdfFile) {
         const uploaded = await uploadAttachment(editPdfFile, orgId);
         await removeStoragePath(editPdfPath);
         pdfUrl = uploaded.url;
         pdfPath = uploaded.path;
+        pdfFilename = editPdfFile.name;
       } else if (editPdfUrl === null && editPdfPath) {
         await removeStoragePath(editPdfPath);
         pdfPath = null;
+        pdfFilename = null;
       }
 
       let videoUrl = editVideoUrl;
       let videoPath = editVideoPath;
+      let videoFilename = editVideoFilename;
       if (editVideoFile) {
         const uploaded = await uploadAttachment(editVideoFile, orgId);
         await removeStoragePath(editVideoPath);
         videoUrl = uploaded.url;
         videoPath = uploaded.path;
+        videoFilename = editVideoFile.name;
       } else if (editVideoUrl === null && editVideoPath) {
         await removeStoragePath(editVideoPath);
         videoPath = null;
+        videoFilename = null;
       }
 
       let audioUrl = editAudioUrl;
       let audioPath = editAudioPath;
+      let audioFilename = editAudioFilename;
       if (editAudioFile) {
         const uploaded = await uploadAttachment(editAudioFile, orgId);
         await removeStoragePath(editAudioPath);
         audioUrl = uploaded.url;
         audioPath = uploaded.path;
+        audioFilename = editAudioFile.name;
       } else if (editAudioUrl === null && editAudioPath) {
         await removeStoragePath(editAudioPath);
         audioPath = null;
+        audioFilename = null;
       }
 
       await update(editingId, {
@@ -273,12 +305,16 @@ export function ScriptsSettings() {
         content: editContent,
         image_url: imageUrl,
         image_path: imagePath,
+        image_filename: imageFilename,
         pdf_url: pdfUrl,
         pdf_path: pdfPath,
+        pdf_filename: pdfFilename,
         video_url: videoUrl,
         video_path: videoPath,
+        video_filename: videoFilename,
         audio_url: audioUrl,
         audio_path: audioPath,
+        audio_filename: audioFilename,
       });
       toast.success('Script atualizado.');
       setEditingId(null);
