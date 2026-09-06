@@ -735,8 +735,8 @@ function AddDealForm({
   };
 
   const canSubmit = creatingLead
-    ? leadName.trim() && leadPhone.trim() && productId
-    : contactId && productId;
+    ? leadName.trim() && leadPhone.trim()
+    : !!contactId;
 
   return (
     <form
@@ -760,8 +760,11 @@ function AddDealForm({
             finalContactId = created.id;
           }
           const product = products.find((p) => p.id === productId);
+          const fallbackTitle = creatingLead
+            ? leadName
+            : contacts.find((c) => c.id === finalContactId)?.name ?? contacts.find((c) => c.id === finalContactId)?.phone ?? '';
           await onSubmit({
-            title: product?.name ?? '',
+            title: product?.name ?? fallbackTitle,
             contact_id: finalContactId,
             value: Number(value) || 0,
             product_id: productId || undefined,
@@ -835,13 +838,14 @@ function AddDealForm({
       <select
         value={productId}
         onChange={(e) => {
-          setProductId(e.target.value);
-          const product = products.find((p) => p.id === e.target.value);
-          if (product?.price && !value) setValue(String(product.price));
+          const newProductId = e.target.value;
+          setProductId(newProductId);
+          const product = products.find((p) => p.id === newProductId);
+          setValue(product?.price ? String(product.price) : '');
         }}
         className={inputCls}
       >
-        <option value="">Produto…</option>
+        <option value="">Produto (opcional)…</option>
         {products.map((p) => (
           <option key={p.id} value={p.id}>{p.name}</option>
         ))}
