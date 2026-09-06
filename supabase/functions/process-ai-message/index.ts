@@ -704,13 +704,19 @@ Deno.serve(async (req) => {
   for (const m of mediaToSend) {
     const attachmentType =
       (['image', 'video', 'audio'].includes(m.content_type) ? m.content_type : 'file') as 'image' | 'video' | 'audio' | 'file';
+    // Documento: o WhatsApp exibe o nome do arquivo a partir da URL (que é um
+    // UUID no Storage) se não mandarmos um docName — usa o rótulo da mídia do
+    // agente + a extensão real do arquivo.
+    const filename = attachmentType === 'file'
+      ? `${m.label}${(m.media_url.split('?')[0].match(/\.[a-zA-Z0-9]+$/) ?? [''])[0]}`
+      : undefined;
     const { data: mIns } = await admin
       .from('messages')
       .insert({ org_id: orgId, conversation_id: conversation.id, direction: 'outbound', sender_type: 'ai', content_type: m.content_type, content: null, media_url: m.media_url, is_private_note: false })
       .select('id').single();
     const mId = (mIns as { id: string } | null)?.id ?? null;
     try {
-      const mMsgId = await sendInboxWithResolve(admin, target, { attachmentUrl: m.media_url, attachmentType });
+      const mMsgId = await sendInboxWithResolve(admin, target, { attachmentUrl: m.media_url, attachmentType, filename });
       if (mId) await admin.from('messages').update({ meta_status: 'sent', zernio_message_id: mMsgId }).eq('id', mId);
       mediaSent++;
     } catch (_err) {

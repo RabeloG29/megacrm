@@ -14,8 +14,10 @@ import { requireOrgCaller, AuthError } from '../_shared/auth.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
 import { jsonResponse, preflight } from '../_shared/cors.ts';
 import { ZernioError, uploadMediaDirect } from '../_shared/zernio.ts';
-import { loadOrgZernioContext } from '../_shared/channels.ts';
+import { loadOrgZernioContext, getSendContextForConversation } from '../_shared/channels.ts';
 import { sendInboxWithResolve } from '../_shared/inbox-delivery.ts';
+
+const OPERATOR_MEDIA_BUCKET = 'whatsapp-hub-operator-media';
 
 const MAX_BYTES = 25 * 1024 * 1024;
 
@@ -90,8 +92,28 @@ Deno.serve(async (req) => {
 
     // 1. Sobe a mídia ao Zernio (host da URL usada no attachmentUrl, inclusive
     //    para conversas UAZAPI que enviam a URL direto pela instância).
-    const zernio = await loadOrgZernioContext(admin, caller.orgId, convRow.zernio_account_id ?? null);
-    const mediaUrl = await uploadMediaDirect({ apiKey: zernio.apiKey, bytes, filename, contentType: mime });
+    const sendCtx = await getSendContextForConversation(admin, {
+      org_id: caller.orgId,
+      channel_id: convRow.channel_id ?? null,
+      provider: convRow.provider ?? null,
+      zernio_account_id: convRow.zernio_account_id ?? null,
+    });
+
+    let mediaUrl: string;
+    if (sendCtx.provider === 'uazapi') {
+      const ext = filename.includes('.') ? filename.slice(filename.lastIndexOf('.')) : '';
+      const path = `${caller.orgId}/${crypto.randomUUID()}${ext}`;
+      const { error: upErr } = await admin.storage
+        .from(OPERATOR_MEDIA_BUCKET)
+        .upload(path, bytes, { contentType: mime, upsert: false });
+      if (upErr) {
+        return jsonResponse({ ok: false, error: `Falha ao subir mídia: ${upErr.message}` }, { status: 500 });
+      }
+      mediaUrl = admin.storage.from(OPERATOR_MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;
+    } else {
+      const zernio = await loadOrgZernioContext(admin, caller.orgId, convRow.zernio_account_id ?? null);
+      mediaUrl = await uploadMediaDirect({ apiKey: zernio.apiKey, bytes, filename, contentType: mime });
+    }
 
     // 2. Resolve a conversa 1:1 no Zernio (por canal) e envia a mídia, curando
     //    o id salvo se o Zernio o rejeitar.
@@ -115,7 +137,13 @@ Deno.serve(async (req) => {
         zernioAccountId: convRow.zernio_account_id ?? null,
         provider: convRow.provider ?? null,
       },
-      { attachmentUrl: mediaUrl, voiceNote, text: caption || undefined },
+      {
+        attachmentUrl: mediaUrl,
+        attachmentType: contentType === 'document' ? 'file' : contentType,
+        filename: contentType === 'document' ? filename : undefined,
+        voiceNote,
+        text: caption || undefined,
+      },
     );
 
     // 4. Persiste a linha (media_url = url do Zernio, baixável pelo thread).

@@ -46,6 +46,9 @@ export interface InboxSendPayload {
   attachmentUrl?: string;
   attachmentType?: 'image' | 'video' | 'audio' | 'file';
   voiceNote?: boolean;
+  // Nome original do arquivo (só usado quando attachmentType === 'file'/
+  // document — vira o docName da UAZAPI, o nome que o WhatsApp exibe).
+  filename?: string;
 }
 
 interface Resolved {
@@ -87,6 +90,7 @@ export async function sendInboxWithResolve(
         type,
         fileUrl: payload.attachmentUrl,
         caption: payload.text,
+        docName: payload.filename,
       });
       return sent.messageId;
     }

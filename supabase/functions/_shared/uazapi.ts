@@ -100,6 +100,10 @@ export async function uazapiSendMedia(
     type: 'image' | 'video' | 'document' | 'audio' | 'ptt';
     fileUrl: string;
     caption?: string;
+    // Nome de exibição do arquivo — só a UAZAPI usa (campo `docName`, e só
+    // para type='document'); sem isso o WhatsApp mostra o nome do arquivo no
+    // Storage (ex.: um UUID), já que a URL não carrega o nome original.
+    docName?: string;
   },
 ): Promise<{ messageId: string | null }> {
   const body: Record<string, unknown> = {
@@ -108,6 +112,7 @@ export async function uazapiSendMedia(
     file: input.fileUrl,
   };
   if (input.caption) body.text = input.caption;
+  if (input.type === 'document' && input.docName) body.docName = input.docName;
   const root = await ufetch(ctx, '/send/media', body);
   return { messageId: messageIdOf(root) };
 }
