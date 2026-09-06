@@ -3,11 +3,31 @@ import { Link } from 'react-router-dom';
 import { KeyRound, X } from 'lucide-react';
 import { useMissingCredentials } from '@/hooks/useMissingCredentials';
 
+// Chave no localStorage: dispensar precisa ser permanente (não só até o
+// próximo F5/navegação), senão o aviso reaparece toda hora mesmo depois de
+// fechado — foi exatamente esse o incômodo relatado.
+const DISMISS_KEY = 'crm:credentials-banner-dismissed';
+
 // Banner discreto (admin-only) avisando que faltam chaves de API para ativar
-// WhatsApp e IA. Não bloqueia nada; dispensável na sessão (estado local).
+// WhatsApp e IA. Não bloqueia nada; dispensável permanentemente (localStorage).
 export function CredentialsBanner() {
   const { missing, loading } = useMissingCredentials();
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      return localStorage.getItem(DISMISS_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  const dismiss = () => {
+    setDismissed(true);
+    try {
+      localStorage.setItem(DISMISS_KEY, '1');
+    } catch {
+      // localStorage indisponível (modo privado etc.) — some só nesta sessão.
+    }
+  };
 
   if (loading || !missing || dismissed) return null;
 
@@ -29,7 +49,7 @@ export function CredentialsBanner() {
       </div>
       <button
         type="button"
-        onClick={() => setDismissed(true)}
+        onClick={dismiss}
         aria-label="Dispensar aviso"
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition hover:bg-[rgba(22,163,74,0.06)] hover:text-[var(--color-text-primary)]"
       >
