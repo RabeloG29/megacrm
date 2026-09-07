@@ -12,8 +12,17 @@ import { LoadErrorBanner } from '@/components/LoadErrorBanner';
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100, 1000] as const;
 
-const fmtDate = (s: string | null | undefined) =>
-  s ? new Date(s).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
+// Campos "date" puros do Postgres (purchase_date, subscription_expires_at)
+// vêm como "YYYY-MM-DD" sem hora — new Date(s) direto interpreta isso como
+// meia-noite UTC, e ao formatar no fuso local (Brasil, UTC-3) o dia exibido
+// fica 1 a menos. Tratamos como meio-dia local nesse caso, igual já é feito
+// em ContactDetailPage/useIndicadores. Campos timestamptz (first_seen_at,
+// created_at) já vêm com hora/fuso e seguem sem alteração.
+const fmtDate = (s: string | null | undefined) => {
+  if (!s) return '—';
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(`${s}T12:00:00`) : new Date(s);
+  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
 
 export default function StudentsPage() {
   const [search, setSearch] = useState('');
