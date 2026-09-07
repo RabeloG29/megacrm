@@ -692,6 +692,21 @@ function DealCard({
           ))}
         </div>
       )}
+      {/* Tags do contato (atribuídas pela aba Contatos) — separadas das tags
+          do negócio acima, só pra exibição no card. */}
+      {deal.contact?.tags && deal.contact.tags.length > 0 && (
+        <div className="mt-1 flex flex-wrap gap-1">
+          {deal.contact.tags.slice(0, 3).map((t) => (
+            <span
+              key={t.id}
+              className="rounded-full px-2 py-0.5 text-[10px]"
+              style={{ background: `${t.color}22`, color: t.color }}
+            >
+              {t.name}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

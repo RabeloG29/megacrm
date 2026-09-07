@@ -34,6 +34,7 @@ interface UseDealDetailResult {
   notes: DealNote[];
   products: DealProduct[];      // produtos associados a este deal (com valor da compra)
   tags: Tag[];                  // tags associadas a este deal
+  contactTags: Tag[];           // tags do CONTATO (atribuídas na aba Contatos) — só leitura aqui
   productCatalog: Product[];    // catálogo da org (autocomplete)
   tagCatalog: Tag[];            // catálogo de tags da org
   lossReasonCatalog: LossReason[]; // motivos de perda cadastrados (Configurações)
@@ -58,6 +59,7 @@ export function useDealDetail(deal: Deal | null): UseDealDetailResult {
   const [notes, setNotes] = useState<DealNote[]>([]);
   const [products, setProducts] = useState<DealProduct[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [contactTags, setContactTags] = useState<Tag[]>([]);
   const [productCatalog, setProductCatalog] = useState<Product[]>([]);
   const [tagCatalog, setTagCatalog] = useState<Tag[]>([]);
   const [lossReasonCatalog, setLossReasonCatalog] = useState<LossReason[]>([]);
@@ -70,13 +72,16 @@ export function useDealDetail(deal: Deal | null): UseDealDetailResult {
     setError(null);
     const supabase = getSupabase();
 
-    const [contactRes, fieldsRes, valuesRes, notesRes, dpRes, dtRes, prodRes, tagRes, lossReasonRes] = await Promise.all([
+    const [contactRes, fieldsRes, valuesRes, notesRes, dpRes, dtRes, ctRes, prodRes, tagRes, lossReasonRes] = await Promise.all([
       supabase.from('contacts').select('id, name, phone, email, source, custom_fields, created_at, updated_at').eq('id', deal.contact_id).single(),
       supabase.from('custom_fields').select('*').order('position'),
       supabase.from('custom_field_values').select('*').eq('deal_id', deal.id),
       supabase.from('crm_activities').select('id, body, title, created_at').eq('deal_id', deal.id).eq('type', 'note').order('created_at', { ascending: false }).limit(100),
       supabase.from('deal_products').select('value, quantity, product:product_id(id, name)').eq('deal_id', deal.id),
       supabase.from('deal_tags').select('tag:tag_id(id, name, color)').eq('deal_id', deal.id),
+      // Tags do CONTATO (atribuídas na aba Contatos) — só leitura no drawer,
+      // pra aparecer junto das tags do negócio sem misturar as duas tabelas.
+      supabase.from('contact_tags').select('tag:tag_id(id, name, color)').eq('contact_id', deal.contact_id),
       supabase.from('products').select('id, name, product_type, quantity, price').order('name'),
       supabase.from('tags').select('id, name, color').order('name'),
       supabase.from('loss_reasons').select('id, name').order('name'),
@@ -101,6 +106,7 @@ export function useDealDetail(deal: Deal | null): UseDealDetailResult {
         .map((x) => ({ id: x.product!.id, name: x.product!.name, value: x.value, quantity: x.quantity ?? 1 })),
     );
     setTags(((dtRes.data ?? []) as unknown as Array<{ tag: Tag | null }>).map((x) => x.tag).filter((t): t is Tag => Boolean(t)));
+    setContactTags(((ctRes.data ?? []) as unknown as Array<{ tag: Tag | null }>).map((x) => x.tag).filter((t): t is Tag => Boolean(t)));
     setProductCatalog((prodRes.data ?? []) as Product[]);
     setTagCatalog((tagRes.data ?? []) as Tag[]);
     setLossReasonCatalog((lossReasonRes.data ?? []) as LossReason[]);
@@ -234,7 +240,7 @@ export function useDealDetail(deal: Deal | null): UseDealDetailResult {
   }, [deal]);
 
   return {
-    contact, fields, values, notes, products, tags, productCatalog, tagCatalog, lossReasonCatalog,
+    contact, fields, values, notes, products, tags, contactTags, productCatalog, tagCatalog, lossReasonCatalog,
     loading, error, reload,
     saveValue, addNote, createField, saveContact, saveDeal,
     addProduct, removeProduct, addTag, removeTag,

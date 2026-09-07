@@ -4,21 +4,31 @@ import { playWinSound } from '@/lib/sounds';
 import type { Pipeline, Stage, Deal, Tag } from '@/types/crm';
 
 const DEAL_SELECT =
-  '*, contact:contact_id(id, name, phone, email, custom_fields), deal_tags(tag:tag_id(id, name, color)), deal_products(product:product_id(id, name))';
+  '*, contact:contact_id(id, name, phone, email, custom_fields, contact_tags(tag:tag_id(id, name, color))), deal_tags(tag:tag_id(id, name, color)), deal_products(product:product_id(id, name))';
 
 // Resumo das conversas do contato (canal + última interação) para os filtros.
 // Um contato pode ter várias conversas (Meta, UAZAPI, Instagram).
 export type { ContactConvInfo } from '@/components/funil/funilFilterLogic';
 import type { ContactConvInfo } from '@/components/funil/funilFilterLogic';
 
-// Normaliza os deal_tags/deal_products aninhados do PostgREST em Deal.tags/products.
+// Normaliza os deal_tags/deal_products/contact_tags aninhados do PostgREST em
+// Deal.tags/products e Deal.contact.tags (tags do contato, pro card e drawer
+// mostrarem também as tags atribuídas pela aba Contatos — não confundir com
+// as tags do negócio em si, que continuam vindo de deal_tags).
 function normalizeDeal(row: Record<string, unknown>): Deal {
   const dt = (row.deal_tags as Array<{ tag: Tag | null }> | undefined) ?? [];
   const tags = dt.map((x) => x.tag).filter((t): t is Tag => Boolean(t));
   const dp = (row.deal_products as Array<{ product: { id: string; name: string } | null }> | undefined) ?? [];
   const products = dp.map((x) => x.product).filter((p): p is { id: string; name: string } => Boolean(p));
+  const rawContact = row.contact as (Record<string, unknown> & { contact_tags?: Array<{ tag: Tag | null }> }) | null;
+  const contact = rawContact
+    ? (() => {
+        const { contact_tags: ct, ...contactRest } = rawContact;
+        return { ...contactRest, tags: (ct ?? []).map((x) => x.tag).filter((t): t is Tag => Boolean(t)) };
+      })()
+    : rawContact;
   const { deal_tags: _omit, deal_products: _omit2, ...rest } = row;
-  return { ...(rest as unknown as Deal), tags, products };
+  return { ...(rest as unknown as Deal), tags, products, contact: contact as Deal['contact'] };
 }
 
 interface CreateDealInput {

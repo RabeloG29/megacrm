@@ -138,6 +138,9 @@ export interface ContactLite {
   phone: string;
   email?: string | null;
   custom_fields?: Record<string, unknown> | null;
+  // Tags do contato (contact_tags) — embutidas no board pro chip do card;
+  // não confundir com Deal.tags (deal_tags), que são tags do negócio.
+  tags?: Tag[];
 }
 
 // Contato completo carregado no drawer do card do funil.

@@ -46,7 +46,7 @@ const inputCls =
 
 export function DealDrawer({ deal, stages, pipelines, isAdmin, onClose, onStageChange, onChanged }: DealDrawerProps) {
   const detail = useDealDetail(deal);
-  const { contact, fields, values, notes, products, tags, productCatalog, tagCatalog, lossReasonCatalog, loading, error } = detail;
+  const { contact, fields, values, notes, products, tags, contactTags, productCatalog, tagCatalog, lossReasonCatalog, loading, error } = detail;
   const { operators } = useOperators();
   const [note, setNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
@@ -372,6 +372,26 @@ export function DealDrawer({ deal, stages, pipelines, isAdmin, onClose, onStageC
             <Link to={`/inbox?contact=${deal.contact_id}`} className="flex items-center justify-center gap-2 rounded-lg border border-[rgba(22,163,74,0.2)] py-2.5 text-sm font-medium text-[var(--accent-secondary)] transition hover:border-[var(--accent-primary)] hover:bg-[rgba(22,163,74,0.06)]">
               <MessageSquare className="h-4 w-4" /> Abrir conversa no inbox
             </Link>
+
+            {/* Tags do contato (atribuídas na aba Contatos) — só leitura aqui;
+                editar é feito na ficha do contato. Separadas das tags do
+                negócio abaixo, que continuam editáveis normalmente. */}
+            {contactTags.length > 0 && (
+              <section className="space-y-2">
+                <div className="text-label">Tags do contato</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {contactTags.map((t) => (
+                    <span
+                      key={t.id}
+                      className="inline-flex items-center rounded-full px-2.5 py-1 text-xs"
+                      style={{ background: `${t.color}22`, color: t.color }}
+                    >
+                      {t.name}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* Tags */}
             <ChipEditor
