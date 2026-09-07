@@ -146,8 +146,8 @@ export function FunilFilters({
         </label>
 
         {/* Status do lead: Abertos (default, oculta ganhos/perdidos do board
-            ativo) / Ganhos / Perdidos — perdidos aparecem na etapa em que
-            foram marcados como perdidos. */}
+            ativo) / Ganhos / Perdidos / Todos — perdidos aparecem na etapa em
+            que foram marcados como perdidos. */}
         <label className="inline-flex items-center gap-2 rounded-lg border border-[rgba(22,163,74,0.25)] px-3 py-2 text-sm text-[var(--color-text-primary)] transition hover:border-[var(--accent-primary)]">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">Status lead</span>
           <select

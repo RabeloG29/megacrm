@@ -156,20 +156,23 @@ export function applyFunilFilters(
   });
 }
 
-// ---- Status do lead (Aberto / Ganho / Perdido) ------------------------------
+// ---- Status do lead (Aberto / Ganho / Perdido / Todos) ----------------------
 // Independente dos filtros acima: controla quais deals.status aparecem no
 // board. Default 'aberto' — ganhos e perdidos ficam ocultos até o usuário
 // escolher explicitamente ver um dos dois (evita poluir o funil ativo).
+// 'todos' mostra abertos + ganhos + perdidos de uma vez.
 
-export type LeadStatusFilter = 'aberto' | 'ganho' | 'perdido';
+export type LeadStatusFilter = 'aberto' | 'ganho' | 'perdido' | 'todos';
 
 export const LEAD_STATUS_LABEL: Record<LeadStatusFilter, string> = {
   aberto: 'Abertos',
   ganho: 'Ganhos',
   perdido: 'Perdidos',
+  todos: 'Todos',
 };
 
 export function matchesLeadStatus(deal: Deal, status: LeadStatusFilter): boolean {
+  if (status === 'todos') return true;
   if (status === 'ganho') return deal.status === 'won';
   if (status === 'perdido') return deal.status === 'lost';
   return deal.status === 'open';
