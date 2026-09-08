@@ -8,7 +8,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { useTags } from '@/hooks/useTags';
 import { useProducts } from '@/hooks/useProducts';
 import { useStudents } from '@/hooks/useStudents';
-import { normalizePhone } from '@/lib/phone';
+import { normalizePhone, getCountryOptions, type CountryCode } from '@/lib/phone';
 
 interface StudentFormDialogProps {
   open: boolean;
@@ -16,12 +16,16 @@ interface StudentFormDialogProps {
   onSaved?: () => void;
 }
 
+const COUNTRY_OPTIONS = getCountryOptions();
+
 export function StudentFormDialog({ open, onClose, onSaved }: StudentFormDialogProps) {
   const { tags } = useTags();
   const { products, create: createProduct } = useProducts();
   const { addStudent } = useStudents();
 
   const [phone, setPhone] = useState('');
+  const [isForeign, setIsForeign] = useState(false);
+  const [country, setCountry] = useState<CountryCode | ''>('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [productId, setProductId] = useState('');
@@ -36,6 +40,8 @@ export function StudentFormDialog({ open, onClose, onSaved }: StudentFormDialogP
   useEffect(() => {
     if (!open) return;
     setPhone('');
+    setIsForeign(false);
+    setCountry('');
     setName('');
     setEmail('');
     setProductId('');
@@ -46,7 +52,13 @@ export function StudentFormDialog({ open, onClose, onSaved }: StudentFormDialogP
     setNewProductName('');
   }, [open]);
 
-  const phonePreview = phone.trim() ? normalizePhone(phone) : null;
+  const phonePreview = !phone.trim()
+    ? null
+    : isForeign
+      ? country
+        ? normalizePhone(phone, country)
+        : ({ ok: false, error: 'Selecione o país do telefone' } as const)
+      : normalizePhone(phone);
 
   const toggleTag = (id: string) => {
     setSelectedTags((prev) => {
@@ -133,6 +145,35 @@ export function StudentFormDialog({ open, onClose, onSaved }: StudentFormDialogP
               <div className={`text-xs ${phonePreview.ok ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}`}>
                 {phonePreview.ok ? `E.164: ${phonePreview.e164}` : phonePreview.error}
               </div>
+            )}
+            <label className="flex cursor-pointer items-center gap-2 pt-1 text-sm text-[var(--color-text-secondary)]">
+              <input
+                type="checkbox"
+                checked={isForeign}
+                onChange={(e) => {
+                  setIsForeign(e.target.checked);
+                  if (!e.target.checked) setCountry('');
+                }}
+                disabled={saving}
+                className="h-4 w-4 accent-[#16A34A]"
+              />
+              Aluno estrangeiro?
+            </label>
+            {isForeign && (
+              <select
+                value={country}
+                onChange={(e) => setCountry(e.target.value as CountryCode)}
+                disabled={saving}
+                required
+                className="h-10 w-full rounded-lg border border-[rgba(22,163,74,0.12)] bg-[rgba(22,163,74,0.06)] px-3 text-sm text-[var(--color-text-primary)]"
+              >
+                <option value="">País do telefone...</option>
+                {COUNTRY_OPTIONS.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
             )}
           </div>
 
