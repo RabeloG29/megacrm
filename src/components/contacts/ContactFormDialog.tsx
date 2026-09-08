@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog } from '@/components/ui/dialog';
 import { useTags } from '@/hooks/useTags';
 import { useContacts } from '@/hooks/useContacts';
-import { normalizePhone } from '@/lib/phone';
+import { normalizePhone, getCountryOptions, type CountryCode } from '@/lib/phone';
 import type { ContactWithTags } from '@/types/db';
 
 interface ContactFormDialogProps {
@@ -16,6 +16,8 @@ interface ContactFormDialogProps {
   contact?: ContactWithTags | null;
   onSaved?: () => void;
 }
+
+const COUNTRY_OPTIONS = getCountryOptions();
 
 type CustomFieldEntry = { key: string; value: string };
 
@@ -41,6 +43,8 @@ export function ContactFormDialog({ open, onClose, contact, onSaved }: ContactFo
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [isForeign, setIsForeign] = useState(false);
+  const [country, setCountry] = useState<CountryCode | ''>('');
   const [email, setEmail] = useState('');
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [customFields, setCustomFields] = useState<CustomFieldEntry[]>([]);
@@ -55,6 +59,8 @@ export function ContactFormDialog({ open, onClose, contact, onSaved }: ContactFo
     if (!open) return;
     setName(contact?.name ?? '');
     setPhone(contact?.phone ?? '');
+    setIsForeign(false);
+    setCountry('');
     setEmail(contact?.email ?? '');
     setSelectedTags(new Set((contact?.tags ?? []).map((t) => t.id)));
     setCustomFields(
@@ -69,11 +75,14 @@ export function ContactFormDialog({ open, onClose, contact, onSaved }: ContactFo
 
   const phonePreview = useMemo(() => {
     if (!phone.trim()) return null;
-    const result = normalizePhone(phone);
+    if (isForeign && !country) {
+      return { ok: false as const, error: 'Selecione o país do telefone' };
+    }
+    const result = normalizePhone(phone, isForeign && country ? country : undefined);
     return result.ok
       ? { ok: true as const, e164: result.e164 }
       : { ok: false as const, error: result.error };
-  }, [phone]);
+  }, [phone, isForeign, country]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -144,6 +153,35 @@ export function ContactFormDialog({ open, onClose, contact, onSaved }: ContactFo
               <div className={`text-xs ${phonePreview.ok ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}`}>
                 {phonePreview.ok ? `E.164: ${phonePreview.e164}` : phonePreview.error}
               </div>
+            )}
+            <label className="flex cursor-pointer items-center gap-2 pt-1 text-sm text-[var(--color-text-secondary)]">
+              <input
+                type="checkbox"
+                checked={isForeign}
+                onChange={(e) => {
+                  setIsForeign(e.target.checked);
+                  if (!e.target.checked) setCountry('');
+                }}
+                disabled={saving}
+                className="h-4 w-4 accent-[#16A34A]"
+              />
+              Contato estrangeiro?
+            </label>
+            {isForeign && (
+              <select
+                value={country}
+                onChange={(e) => setCountry(e.target.value as CountryCode)}
+                disabled={saving}
+                required
+                className="h-10 w-full rounded-lg border border-[rgba(22,163,74,0.12)] bg-[rgba(22,163,74,0.06)] px-3 text-sm text-[var(--color-text-primary)]"
+              >
+                <option value="">País do telefone...</option>
+                {COUNTRY_OPTIONS.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
             )}
           </div>
 
